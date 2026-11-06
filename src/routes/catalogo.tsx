@@ -2,8 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { SearchX } from "lucide-react";
 import { FORMATS, type Category } from "@/lib/data";
-import { refreshCatalog, useCatalog } from "@/lib/catalog";
-import { Button } from "@/components/ui/button";
+import { useCatalog } from "@/lib/catalog";
 import { PriceNote, ProductCard } from "@/components/ProductCard";
 import { Switch } from "@/components/ui/switch";
 
@@ -25,7 +24,7 @@ const sel = "h-11 rounded-xl border bg-card px-3 text-sm";
 
 function Catalogo() {
   const s = Route.useSearch();
-  const { products, vendors: allVendors, categories, loaded, error } = useCatalog();
+  const { products, vendors: allVendors, categories, loaded } = useCatalog();
   const vendors = allVendors.filter((v) => v.active);
   const [q, setQ] = useState(s.q ?? "");
   const [cat, setCat] = useState<string>(s.cat ?? "");
@@ -56,7 +55,7 @@ function Catalogo() {
         <label className="flex items-center gap-2 text-sm lg:col-span-3"><Switch checked={onlyStock} onCheckedChange={setOnlyStock} />Solo stock confirmado hoy</label>
       </div>
       <p className="text-sm text-muted-foreground">{list.length} productos</p>
-      {error ? <div className="p-10 text-center"><p>No pudimos cargar el catálogo.</p><Button onClick={() => void refreshCatalog()} className="mt-3">Reintentar</Button></div> : !loaded ? <p className="p-10 text-center text-muted-foreground">Cargando catálogo...</p> : list.length === 0 ? (
+      {!loaded ? <p className="p-10 text-center text-muted-foreground">Cargando catálogo...</p> : list.length === 0 ? (
         <div className="rounded-2xl border bg-card p-10 text-center"><SearchX className="mx-auto h-10 w-10 text-muted-foreground" /><p className="mt-2 font-semibold">No encontramos productos con esos filtros</p><p className="text-sm text-muted-foreground">Prueba otros filtros o envíanos una solicitud personalizada.</p></div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{list.map((p) => <ProductCard key={p.id} p={p} />)}</div>

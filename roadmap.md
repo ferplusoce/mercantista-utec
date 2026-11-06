@@ -1,6 +1,4 @@
 # Team feedback
-- [ ] Verify shared catalog data, photo access, all shopping screens, and most-ordered products for the remix.
-- [ ] Complete catalog persistence and image gaps; run focused tests and shopping-flow checks.
 - [x] Rename delivery labels without changing tariffs.
 - [x] Normalize old opinion delivery values in reporting and CSV.
 - [x] Add first-visit welcome and home steps.
