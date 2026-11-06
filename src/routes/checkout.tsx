@@ -142,6 +142,7 @@ function Checkout() {
 }
 
 function Success({ o }: { o: Order }) {
+  const { tariffs } = useCatalog();
   const text = `Hola Mercantista, quiero consultar sobre mi pedido ${o.code} (${soles(o.total)})`;
   return (
     <Card className="mx-auto max-w-lg text-center print:shadow-none">
@@ -152,7 +153,7 @@ function Success({ o }: { o: Order }) {
       <p className="mt-2 text-sm">Total estimado <b>{soles(o.total)}</b> · {o.service === "taxi_delivery" ? "Entrega tipo 1 · Compra y subida a tu taxi" : "Entrega tipo 2 · Hasta tu bodega o almacén"}</p>
       <div className="mt-5 grid gap-2">
         <Link to="/seguimiento" search={{ code: o.code }} className="flex h-12 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground">Seguir mi pedido</Link>
-        <a href={waLink(text)} target="_blank" rel="noreferrer" className="flex h-12 items-center justify-center rounded-xl bg-success font-semibold text-success-foreground"><MessageCircle className="mr-2 h-5 w-5" />Compartir por WhatsApp</a>
+        <a href={waLink(text, tariffs.whatsapp)} target="_blank" rel="noreferrer" className="flex h-12 items-center justify-center rounded-xl bg-success font-semibold text-success-foreground"><MessageCircle className="mr-2 h-5 w-5" />Compartir por WhatsApp</a>
         <button onClick={() => window.print()} className="flex h-12 items-center justify-center rounded-xl border font-semibold"><Download className="mr-2 h-5 w-5" />Descargar resumen PDF</button>
       </div>
       <div className="mt-6 text-left"><OpinionForm /></div>

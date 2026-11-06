@@ -20,6 +20,5 @@ export type Product = {
 export const ZONES = ["Lurín Cercado", "Lurín - Julio C. Tello", "Lurín - Huertos de Lurín", "Lurín - Km 40 / Arica", "Villa El Salvador (limítrofe)", "Pachacámac (zonas bajas)"] as const;
 export const SLOTS = ["Madrugada (05:30 - 07:30 am)", "Mañana (08:00 - 10:30 am)"] as const;
 
-export const WHATSAPP = "51987654321";
-export const waLink = (msg: string, num: string = WHATSAPP) => `https://wa.me/${num.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
+export const waLink = (msg: string, num: string) => `https://wa.me/${num.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
 export const soles = (n: number) => `S/ ${n.toFixed(2)}`;
