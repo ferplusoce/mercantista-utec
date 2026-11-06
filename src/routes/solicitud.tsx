@@ -27,7 +27,8 @@ const empty = (vendor = ""): Row => ({ name: "", qty: "1", unit: "Saco", quality
 
 function Solicitud() {
   const { vendor } = Route.useSearch();
-  const vendors = useCatalog().vendors.filter((v) => v.active);
+  const catalog = useCatalog();
+  const vendors = catalog.vendors.filter((v) => v.active);
   const [mode, setMode] = useState<"lista" | "foto">("lista");
   const [rows, setRows] = useState<Row[]>([empty(vendor)]);
   const [file, setFile] = useState<{ name: string; url?: string; raw: File } | null>(null);
@@ -60,7 +61,7 @@ function Solicitud() {
       <p className="mt-1 text-muted-foreground">Tu número de confirmación es</p>
       <p className="break-all font-display text-2xl font-extrabold text-primary">{done}</p>
       <p className="mt-2 text-sm text-muted-foreground">Cotizamos en Unicachi y te escribimos por WhatsApp antes de las 05:00 am.</p>
-      <a href={waLink(`Hola Mercantista, envié la solicitud ${done}`)} target="_blank" rel="noreferrer" className="mt-5 inline-flex h-12 items-center rounded-xl bg-success px-6 font-semibold text-success-foreground">Escribir por WhatsApp</a>
+      <a href={waLink(`Hola Mercantista, envié la solicitud ${done}`, catalog.tariffs.whatsapp)} target="_blank" rel="noreferrer" className="mt-5 inline-flex h-12 items-center rounded-xl bg-success px-6 font-semibold text-success-foreground">Escribir por WhatsApp</a>
     </Card>
   );
 

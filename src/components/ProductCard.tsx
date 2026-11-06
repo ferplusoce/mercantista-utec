@@ -15,8 +15,9 @@ export function AvailBadge({ a }: { a: Product["availability"] }) {
 
 /** Foto liviana (lazy, tamaño fijo) o recuadro gris con el nombre cuando no hay foto. */
 export function Photo({ src, name, className }: { src: string | null; name: string; className: string }) {
-  if (!src) return <div className={`grid place-items-center rounded-xl bg-muted p-2 text-center text-sm font-semibold text-muted-foreground ${className}`}>{name}</div>;
-  return <img src={src} alt={name} loading="lazy" decoding="async" width={320} height={240} className={`w-full rounded-xl bg-muted object-cover ${className}`} />;
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  if (!src || failedSrc === src) return <div className={`grid place-items-center rounded-xl bg-muted p-2 text-center text-sm font-semibold text-muted-foreground ${className}`}>{name}</div>;
+  return <img src={src} alt={name} onError={() => setFailedSrc(src)} loading="lazy" decoding="async" width={320} height={240} className={`rounded-xl bg-muted object-cover ${className}`} />;
 }
 
 export function ProductImage({ p, big }: { p: Product; big?: boolean }) {

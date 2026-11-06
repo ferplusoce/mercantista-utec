@@ -34,7 +34,7 @@ export async function refreshCatalog() {
     supabase.from("products").select("*").order("name"),
     supabase.from("settings").select("*").eq("id", 1).maybeSingle(),
   ]);
-  if (c.error || v.error || p.error) { set({ loaded: true, error: true }); return; }
+  if (c.error || v.error || p.error || s.error || !s.data) { set({ loaded: true, error: true }); return; }
   const img = await resolveImages([...(c.data ?? []).map((x) => x.image_url ?? ""), ...(p.data ?? []).map((x) => x.image_url ?? "")]);
   const t = (s.data?.tariffs ?? {}) as Partial<Tariffs>;
   set({
@@ -55,6 +55,8 @@ export const getCatalog = () => cat;
 
 // ---------- Escrituras del administrador (RLS: solo rol admin) ----------
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
+const pendingProducts = new Map<string, Partial<Product>>();
+const pendingVendors = new Map<string, Partial<Vendor>>();
 function debounce(key: string, fn: () => Promise<{ error: unknown }>, onError: () => void) {
   clearTimeout(timers.get(key));
   timers.set(key, setTimeout(async () => { const { error } = await fn(); if (error) onError(); }, 600));
@@ -79,7 +81,14 @@ const productRow = (p: Partial<Product>) => {
 
 export function patchProduct(id: string, p: Partial<Product>, onError: () => void) {
   set({ products: cat.products.map((x) => (x.id === id ? { ...x, ...p } : x)) });
-  debounce(`p:${id}`, async () => supabase.from("products").update(productRow(p) as never).eq("id", id), onError);
+  pendingProducts.set(id, { ...pendingProducts.get(id), ...p });
+  debounce(`p:${id}`, async () => {
+    const patch = pendingProducts.get(id) ?? {};
+    pendingProducts.delete(id);
+    const result = await supabase.from("products").update(productRow(patch) as never).eq("id", id);
+    await refreshCatalog();
+    return result;
+  }, onError);
 }
 export async function addProduct(vendorId: string) {
   const { error } = await supabase.from("products").insert({ name: "Nuevo producto", vendor_id: vendorId, category_id: "hortalizas", unit: "Saco de 50 kg", format: "Saco", weight_kg: 50, price: 50, availability: "por_confirmar", description: "Producto agregado por el operador." });
@@ -101,7 +110,14 @@ export async function bulkPrice(pct: number) {
 const vendorRow = (v: Partial<Vendor>) => { const { id: _id, ...rest } = v; return rest; };
 export function patchVendor(id: string, v: Partial<Vendor>, onError: () => void) {
   set({ vendors: cat.vendors.map((x) => (x.id === id ? { ...x, ...v } : x)) });
-  debounce(`v:${id}`, async () => supabase.from("vendors").update(vendorRow(v)).eq("id", id), onError);
+  pendingVendors.set(id, { ...pendingVendors.get(id), ...v });
+  debounce(`v:${id}`, async () => {
+    const patch = pendingVendors.get(id) ?? {};
+    pendingVendors.delete(id);
+    const result = await supabase.from("vendors").update(vendorRow(patch)).eq("id", id);
+    await refreshCatalog();
+    return result;
+  }, onError);
 }
 export async function addVendor() {
   const { error } = await supabase.from("vendors").insert({ id: `v-${Date.now()}`, name: "Nuevo puesto", stall: "F-01", pavilion: "F", schedule: "03:00 am - 11:00 am" });
@@ -127,7 +143,10 @@ export async function shrinkImage(file: File, max = 640): Promise<Blob> {
   const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bmp.width * scale); canvas.height = Math.round(bmp.height * scale);
-  canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  const context = canvas.getContext("2d");
+  if (!context) { bmp.close(); throw new Error("No se pudo procesar la foto"); }
+  context.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close();
   return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("No se pudo procesar la foto"))), "image/webp", 0.72));
 }
 
