@@ -3,6 +3,8 @@ import { pickTopProducts, fetchTopProductIds, patchProduct, patchVendor } from "
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "./data";
 
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: vi.fn(), from: vi.fn() } }));
+
 const mk = (id: string, availability: Product["availability"] = "disponible", active = true): Product => ({ id, name: id, category: "", vendorId: "v", unit: "Saco", format: "Saco", weightKg: 1, price: 1, quality: "Primera", availability, desc: "", image: null, imagePath: null, active });
 const list = Array.from({ length: 12 }, (_, i) => mk(`p${i}`, i % 3 === 0 ? "agotado" : "disponible"));
 
