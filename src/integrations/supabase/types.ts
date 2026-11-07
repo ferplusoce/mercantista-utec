@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      addresses: {
+        Row: {
+          created_at: string
+          id: string
+          line: string
+          ref: string
+          user_id: string
+          zone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line: string
+          ref?: string
+          user_id: string
+          zone: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line?: string
+          ref?: string
+          user_id?: string
+          zone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "addresses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           description: string
@@ -174,6 +209,7 @@ export type Database = {
           subtotal: number
           taxi: Json | null
           total: number
+          user_id: string | null
           weight_kg: number
           zone: string | null
         }
@@ -200,6 +236,7 @@ export type Database = {
           subtotal?: number
           taxi?: Json | null
           total?: number
+          user_id?: string | null
           weight_kg?: number
           zone?: string | null
         }
@@ -226,10 +263,19 @@ export type Database = {
           subtotal?: number
           taxi?: Json | null
           total?: number
+          user_id?: string | null
           weight_kg?: number
           zone?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -297,6 +343,39 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          business_name: string
+          created_at: string
+          doc_number: string
+          doc_type: string
+          owner_name: string
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_name?: string
+          created_at?: string
+          doc_number?: string
+          doc_type?: string
+          owner_name?: string
+          phone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_name?: string
+          created_at?: string
+          doc_number?: string
+          doc_type?: string
+          owner_name?: string
+          phone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       requests: {
         Row: {
           address: string
@@ -311,6 +390,7 @@ export type Database = {
           items: Json
           phone: string
           status: string
+          user_id: string | null
           zone: string
         }
         Insert: {
@@ -326,6 +406,7 @@ export type Database = {
           items?: Json
           phone: string
           status?: string
+          user_id?: string | null
           zone: string
         }
         Update: {
@@ -341,9 +422,18 @@ export type Database = {
           items?: Json
           phone?: string
           status?: string
+          user_id?: string | null
           zone?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       settings: {
         Row: {
@@ -365,6 +455,41 @@ export type Database = {
           whatsapp?: string
         }
         Relationships: []
+      }
+      taxis: {
+        Row: {
+          created_at: string
+          driver: string
+          id: string
+          phone: string
+          plate: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          driver: string
+          id?: string
+          phone?: string
+          plate: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          driver?: string
+          id?: string
+          phone?: string
+          plate?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taxis_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -457,6 +582,7 @@ export type Database = {
           subtotal: number
           taxi: Json | null
           total: number
+          user_id: string | null
           weight_kg: number
           zone: string | null
         }[]
