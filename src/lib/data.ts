@@ -14,7 +14,7 @@ export type Product = {
   id: string; name: string; category: Category; vendorId: string; unit: string; format: (typeof FORMATS)[number];
   weightKg: number; price: number; quality: "Primera" | "Segunda" | "Comercial"; availability: Availability; desc: string;
   /** URL lista para mostrar (o null si no tiene foto). */
-  image: string | null; imagePath: string | null; active: boolean;
+  image: string | null; imagePath: string | null; active: boolean; photoType?: "puesto" | "referencial" | null;
 };
 
 export const ZONES = ["Lurín Cercado", "Lurín - Julio C. Tello", "Lurín - Huertos de Lurín", "Lurín - Km 40 / Arica", "Villa El Salvador (limítrofe)", "Pachacámac (zonas bajas)"] as const;

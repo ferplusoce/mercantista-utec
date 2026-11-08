@@ -2,10 +2,14 @@ import { z } from "zod";
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FORMATS } from "./data";
-import { businessSchema, optionalPhoneSchema, personSchema, priceSchema } from "./validation";
+import { businessSchema, optionalPhoneSchema, personSchema } from "./validation";
+import { pendingProductPriceSchema, photoTypeSchema } from "./catalog-photos";
 
 export const hasAdminRole = (roles: readonly string[]) => roles.includes("admin");
-export const productFormSchema = z.object({ name: z.string().trim().min(1, "Escribe el producto").max(200, "Máximo 200 caracteres"), category: z.string().min(1, "Elige una categoría"), vendorId: z.string().min(1, "Elige un puesto"), unit: z.string().trim().min(1, "Escribe la presentación").max(100, "Máximo 100 caracteres"), format: z.enum(FORMATS), weightKg: z.number().finite().gt(0, "El peso debe ser mayor que 0").max(750, "Máximo 750 kg"), price: priceSchema, quality: z.enum(["Primera", "Segunda", "Comercial"]), availability: z.enum(["disponible", "agotado", "por_confirmar"]), desc: z.string().max(1000, "Máximo 1000 caracteres"), active: z.boolean() });
+export const productFormSchema = z.object({ name: z.string().trim().min(1, "Escribe el producto").max(200, "Máximo 200 caracteres"), category: z.string().min(1, "Elige una categoría"), vendorId: z.string().min(1, "Elige un puesto"), unit: z.string().trim().min(1, "Escribe la presentación").max(100, "Máximo 100 caracteres"), format: z.enum(FORMATS), weightKg: z.number().finite().min(0, "El peso no puede ser negativo").max(750, "Máximo 750 kg"), price: pendingProductPriceSchema, quality: z.enum(["Primera", "Segunda", "Comercial"]), availability: z.enum(["disponible", "agotado", "por_confirmar"]), desc: z.string().max(1000, "Máximo 1000 caracteres"), active: z.boolean(), photoType: photoTypeSchema.nullish() }).superRefine((p, ctx) => {
+  if (p.price === 0 && p.availability !== "por_confirmar") ctx.addIssue({ code: "custom", path: ["price"], message: "Usa 0 solo mientras esté por confirmar" });
+  if (p.weightKg === 0 && (p.price > 0 || p.availability !== "por_confirmar")) ctx.addIssue({ code: "custom", path: ["weightKg"], message: "Completa el peso antes de publicar el precio" });
+});
 export const vendorFormSchema = z.object({ name: businessSchema, stall: z.string().trim().min(1, "Ingresa el número de puesto").max(200), pavilion: z.string().trim().min(1, "Ingresa el pabellón").max(200), contact: z.union([z.literal(""), personSchema]), phone: optionalPhoneSchema, specialty: z.string().max(200), schedule: z.string().max(200), active: z.boolean() });
 export const categoryFormSchema = z.object({ name: z.string().trim().min(1, "Escribe el nombre").max(100, "Máximo 100 caracteres"), sortOrder: z.number().int("Solo números enteros").min(0, "Mínimo 0").max(999, "Máximo 999") });
 export type ProductForm = z.infer<typeof productFormSchema>;
