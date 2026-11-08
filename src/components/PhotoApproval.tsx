@@ -1,3 +1,5 @@
+import { photoSchema, priceSchema } from "@/lib/validation";
+import { ValidatedInput } from "@/components/ValidatedInput";
 import { useCatalog } from "@/lib/catalog";
 import { useState } from "react";
 import { Camera, Check, Pencil } from "lucide-react";
@@ -14,6 +16,7 @@ export function AdminPhotos({ o }: { o: Order }) {
   const act = usePhotoActions(o.code);
   const vendors = useCatalog().vendors;
   const [busy, setBusy] = useState<number | null>(null);
+  const [errors, setErrors] = useState<Record<number, string>>({});
   const [prices, setPrices] = useState<Record<number, string>>({});
   const approved = photos.filter((p) => p.status === "aprobado").length;
   const missing = o.items.length - approved;
@@ -23,7 +26,9 @@ export function AdminPhotos({ o }: { o: Order }) {
   const onFile = async (idx: number, file?: File) => {
     if (!file) { return; }
     const price = +(prices[idx] ?? o.items[idx].unitPrice);
-    if (!(price > 0)) { toast.error("Escribe el precio real"); return; }
+    const result = photoSchema.safeParse(file); const pr = priceSchema.safeParse(price);
+    if (!result.success || !pr.success) { setErrors({ ...errors, [idx]: !result.success ? result.error.issues[0]?.message ?? "Foto inválida" : !pr.success ? pr.error.issues[0]?.message ?? "Precio inválido" : "" }); return; }
+    setErrors({ ...errors, [idx]: "" });
     setBusy(idx);
     try { await act.upload(idx, file, price); toast.success("Foto enviada al cliente"); } catch { toast.error("No se pudo subir la foto"); } finally { setBusy(null); }
   };
@@ -46,12 +51,13 @@ export function AdminPhotos({ o }: { o: Order }) {
             <div className="min-w-0 flex-1 space-y-1">
               <p className="font-medium">{it.qty} × {it.name} <span className="text-muted-foreground">· {v?.stall ?? "—"}</span></p>
               {p && <p className="text-xs">{STATUS_TXT[p.status]} · {soles(p.real_price ?? 0)}{mins !== null && ` · respondió en ${mins} min`}{p.client_comment && <> · <em>"{p.client_comment}"</em></>}</p>}
+              {errors[idx] && <p role="alert" className="text-xs text-destructive">{errors[idx]}</p>}
               {canUpload && p?.status !== "aprobado" && (
                 <div className="flex gap-2">
-                  <input type="number" step="0.5" inputMode="decimal" aria-label="Precio real" placeholder="Precio real" className="h-10 w-24 rounded-lg border bg-card px-2" value={prices[idx] ?? String(p?.real_price ?? it.unitPrice)} onChange={(e) => setPrices({ ...prices, [idx]: e.target.value })} />
+                  <ValidatedInput schema={priceSchema} type="number" step="0.5" inputMode="decimal" aria-label="Precio real" placeholder="Precio real" className="h-10 w-24 rounded-lg border bg-card px-2" value={prices[idx] ?? String(p?.real_price ?? it.unitPrice)} onCommit={(v) => setPrices({ ...prices, [idx]: v })} />
                   <label className={`inline-flex h-10 flex-1 cursor-pointer items-center justify-center rounded-lg bg-primary px-3 font-semibold text-primary-foreground ${busy === idx ? "opacity-50" : ""}`}>
                     <Camera className="mr-1 h-4 w-4" />{busy === idx ? "Subiendo..." : p ? "Nueva foto" : "Tomar foto"}
-                    <input type="file" accept="image/*" capture="environment" className="hidden" disabled={busy !== null} onChange={(e) => { onFile(idx, e.target.files?.[0]); e.target.value = ""; }} />
+                    <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="hidden" disabled={busy !== null} onChange={(e) => { onFile(idx, e.target.files?.[0]); e.target.value = ""; }} />
                   </label>
                 </div>
               )}

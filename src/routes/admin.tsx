@@ -1,4 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
+import { priceSchema, phoneSchema, optionalPhoneSchema, personSchema, businessSchema, photoSchema, digits } from "@/lib/validation";
+import { ValidatedInput } from "@/components/ValidatedInput";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -35,18 +38,22 @@ export const Route = createFileRoute("/admin")({
 function Login() {
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const login = useServerFn(loginWithAdminKey);
   const go = async () => {
-    if (!key) return;
+    const r = z.string().min(1, "Ingresa la clave").max(200, "Máximo 200 caracteres").safeParse(key);
+    if (!r.success) { setError(r.error.issues[0]?.message ?? "Clave inválida"); return; }
+    setError("");
     setBusy(true);
     try { const t = await login({ data: { key } }); await supabase.auth.setSession(t); setKey(""); }
-    catch { toast.error("Clave incorrecta"); } finally { setBusy(false); }
+    catch { setError("Clave incorrecta"); } finally { setBusy(false); }
   };
   return (
     <Card className="mx-auto max-w-sm space-y-3 text-center">
       <Lock className="mx-auto h-10 w-10 text-primary" /><h1 className="text-2xl font-bold">Panel administrativo</h1>
       <p className="text-sm text-muted-foreground">Ingresa la clave del operador.</p>
       <input type="password" autoComplete="off" placeholder="Clave" className={inputCls} value={key} onChange={(e) => setKey(e.target.value)} onKeyDown={(e) => e.key === "Enter" && go()} />
+      {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
       <button disabled={busy} className="h-11 w-full rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60" onClick={go}>{busy ? "Verificando..." : "Ingresar"}</button>
     </Card>
   );
@@ -155,8 +162,7 @@ function Pedidos() {
               <div key={v.id} className="rounded-xl bg-muted p-3 text-sm"><p className="font-semibold">{v.stall} · {v.name}</p>
                 {live.items.filter((i) => i.vendorId === v.id).map((i, idx) => (
                   <div key={idx} className="mt-1 flex items-center justify-between gap-2"><span>{i.qty} × {i.name} {i.note && <em className="text-muted-foreground">({i.note})</em>}</span>
-                    <input type="number" step="0.5" aria-label="Precio real" className="h-8 w-24 rounded-lg border bg-card px-2 text-right" key={`${live.code}-${idx}-${i.unitPrice}`} defaultValue={i.unitPrice}
-                      onBlur={(e) => { const price = +e.target.value; if (price !== i.unitPrice) m.setItemPrice(live, live.items.indexOf(i), price).then(() => toast.success("Precio actualizado"), () => toast.error("No se pudo guardar el precio")); }} />
+                    <ValidatedInput type="number" step="0.5" inputMode="decimal" aria-label="Precio real" className="h-8 w-24 rounded-lg border bg-card px-2 text-right" value={i.unitPrice} schema={priceSchema} onCommit={(v) => { const price = Number(v); if (price !== i.unitPrice) void m.setItemPrice(live, live.items.indexOf(i), price).then(() => toast.success("Precio actualizado"), saveErr); }} />
                   </div>
                 ))}
               </div>
@@ -175,14 +181,16 @@ function Pedidos() {
 
 function ImgUpload({ kind, id, src, name }: { kind: "products" | "categories"; id: string; src: string | null; name: string }) {
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   return (
     <label className="flex cursor-pointer items-center gap-2" title="Cambiar foto">
       <Photo src={src} name={busy ? "Subiendo..." : "Sin foto"} className="h-12 w-12 text-[10px]" />
-      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-        const f = e.target.files?.[0]; if (!f) return; setBusy(true);
+      <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={async (e) => {
+        const f = e.target.files?.[0]; if (!f) return; const result = photoSchema.safeParse(f); if (!result.success) { setError(result.error.issues[0]?.message ?? "Foto inválida"); return; } setError(""); setBusy(true);
         const ok = await uploadImage(kind, id, f).catch(() => false); setBusy(false);
         ok ? toast.success(`Foto de ${name} guardada`) : toast.error("No se pudo subir la foto");
       }} />
+      {error && <span role="alert" className="text-xs text-destructive">{error}</span>}
     </label>
   );
 }
@@ -204,7 +212,7 @@ function Productos() {
     <Card className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 rounded-xl bg-muted p-3 text-sm">
         <span className="font-semibold">Actualización masiva (04:00 am):</span>
-        <input type="number" className="h-9 w-20 rounded-lg border bg-card px-2" value={pct} onChange={(e) => setPct(+e.target.value)} />%
+        <ValidatedInput type="number" className="h-9 w-20 rounded-lg border bg-card px-2" value={pct} schema={z.number().min(0, "Mínimo 0%").max(99, "Máximo 99%")} onCommit={(v) => setPct(Number(v))} />%
         <button className="h-9 rounded-lg bg-primary px-3 text-primary-foreground" onClick={() => bulk(1)}>Subir</button>
         <button className="h-9 rounded-lg border bg-card px-3" onClick={() => bulk(-1)}>Bajar</button>
         <button className="ml-auto inline-flex h-9 items-center rounded-lg border bg-card px-3" onClick={add}><Plus className="mr-1 h-4 w-4" />Producto</button>
@@ -214,11 +222,11 @@ function Productos() {
         <tbody>{products.map((p) => (
           <tr key={p.id} className={`border-t ${p.active ? "" : "opacity-60"}`}>
             <td className="p-2"><ImgUpload kind="products" id={p.id} src={p.image} name={p.name} /></td>
-            <td className="p-2"><input className="h-9 w-48 rounded-lg border bg-card px-2" value={p.name} onChange={(e) => patch(p.id, { name: e.target.value })} /></td>
-            <td className="p-2"><input className="h-9 w-40 rounded-lg border bg-card px-2" value={p.unit} onChange={(e) => patch(p.id, { unit: e.target.value })} /></td>
+            <td className="p-2"><ValidatedInput className="h-9 w-48 rounded-lg border bg-card px-2" value={p.name} schema={z.string().trim().min(1, "Escribe el producto").max(200, "Máximo 200 caracteres")} onCommit={(v) => patch(p.id, { name: v })} /></td>
+            <td className="p-2"><ValidatedInput className="h-9 w-40 rounded-lg border bg-card px-2" value={p.unit} schema={z.string().trim().min(1, "Escribe la presentación").max(100, "Máximo 100 caracteres")} onCommit={(v) => patch(p.id, { unit: v })} /></td>
             <td className="p-2"><select className="h-9 rounded-lg border bg-card px-2" value={p.category} onChange={(e) => patch(p.id, { category: e.target.value })}><option value="">Otros</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name.split(",")[0]}</option>)}</select></td>
             <td className="p-2"><select className="h-9 rounded-lg border bg-card px-2" value={p.vendorId} onChange={(e) => patch(p.id, { vendorId: e.target.value })}>{vendors.map((v) => <option key={v.id} value={v.id}>{v.stall}</option>)}</select></td>
-            <td className="p-2"><input type="number" step="0.5" className="h-9 w-24 rounded-lg border bg-card px-2" value={p.price} onChange={(e) => patch(p.id, { price: +e.target.value })} /></td>
+            <td className="p-2"><ValidatedInput type="number" step="0.5" className="h-9 w-24 rounded-lg border bg-card px-2" value={p.price} schema={priceSchema} onCommit={(v) => patch(p.id, { price: Number(v) })} /></td>
             <td className="p-2"><select className="h-9 rounded-lg border bg-card px-2" value={p.availability} onChange={(e) => patch(p.id, { availability: e.target.value as Availability })}><option value="disponible">Disponible hoy</option><option value="agotado">Agotado en Unicachi</option><option value="por_confirmar">Precio por confirmar</option></select></td>
             <td className="p-2"><input type="checkbox" className="h-5 w-5" checked={p.active} onChange={(e) => patch(p.id, { active: e.target.checked })} /></td>
             <td className="p-2"><button aria-label="Eliminar" onClick={async () => { if (confirm(`¿Eliminar ${p.name}?`)) (await deleteProduct(p.id)) || saveErr(); }}><Trash2 className="h-4 w-4" /></button></td>
@@ -240,7 +248,7 @@ function Puestos() {
       <div className="grid gap-3 md:grid-cols-2">{vendors.map((v) => (
         <Card key={v.id} className={`grid grid-cols-2 gap-2 text-sm ${v.active ? "" : "opacity-60"}`}>
           {([["name", "Nombre"], ["stall", "Número"], ["pavilion", "Pabellón"], ["contact", "Responsable"], ["phone", "Teléfono"], ["schedule", "Horario"], ["specialty", "Especialidad"]] as const).map(([k, l]) => (
-            <label key={k} className={k === "specialty" ? "col-span-2" : ""}><span className="text-xs text-muted-foreground">{l}</span><input className="h-9 w-full rounded-lg border bg-card px-2" value={v[k]} onChange={(e) => patch(v.id, { [k]: e.target.value })} /></label>
+            <label key={k} className={k === "specialty" ? "col-span-2" : ""}><span className="text-xs text-muted-foreground">{l}</span><ValidatedInput className="h-9 w-full rounded-lg border bg-card px-2" inputMode={k === "phone" ? "numeric" : "text"} maxLength={k === "phone" ? 9 : undefined} transform={k === "phone" ? digits : undefined} value={v[k]} schema={k === "phone" ? optionalPhoneSchema : k === "contact" ? z.union([z.literal(""), personSchema]) : k === "name" ? businessSchema : z.string().max(200, "Máximo 200 caracteres")} onCommit={(value) => patch(v.id, { [k]: value })} /></label>
           ))}
           <div className="col-span-2 flex gap-2">
             <button className="inline-flex h-9 items-center rounded-lg border px-3" onClick={() => patch(v.id, { active: !v.active })}>{v.active ? <><Pause className="mr-1 h-4 w-4" />Pausar</> : <><Play className="mr-1 h-4 w-4" />Activar</>}</button>
@@ -259,12 +267,12 @@ function Tarifas() {
   return (
     <div className="space-y-4">
       <Card className="grid gap-3 md:grid-cols-3">
-        <label className="text-sm"><span className="text-muted-foreground">Entrega tipo 1 · Compra y subida a tu taxi: fijo por pedido S/</span><input type="number" className={inputCls} value={t.taxiFlat} onChange={(e) => set({ taxiFlat: +e.target.value })} /></label>
-        <label className="text-sm"><span className="text-muted-foreground">WhatsApp de atención (con código de país, sin +)</span><input className={inputCls} inputMode="tel" value={t.whatsapp} onChange={(e) => set({ whatsapp: e.target.value.replace(/\D/g, "") })} placeholder="51987654321" /></label>
+        <label className="text-sm"><span className="text-muted-foreground">Entrega tipo 1 · Compra y subida a tu taxi: fijo por pedido S/</span><ValidatedInput type="number" className={inputCls} value={t.taxiFlat} schema={priceSchema} onCommit={(v) => set({ taxiFlat: Number(v) })} /></label>
+        <label className="text-sm"><span className="text-muted-foreground">WhatsApp de atención</span><ValidatedInput className={inputCls} inputMode="numeric" maxLength={9} value={t.whatsapp.replace(/^51/, "")} transform={digits} schema={phoneSchema} onCommit={(v) => set({ whatsapp: `51${v}` })} placeholder="9XXXXXXXX" /></label>
       </Card>
       <Card className="overflow-x-auto">
         <table className="w-full text-sm"><thead className="text-left text-muted-foreground"><tr><th className="p-2">Entrega tipo 2 · Hasta tu bodega o almacén</th><th className="p-2">Hasta 200 kg</th><th className="p-2">Hasta 450 kg</th><th className="p-2">Hasta 750 kg</th></tr></thead>
-          <tbody>{([1, 2] as const).map((n) => <tr key={n} className="border-t"><td className="p-2"><p className="text-xs text-muted-foreground">{ZONES.filter((z) => t.zoneTramo[z] === n).join(", ")}</p></td>{t.tramos[n].map((p, i) => <td key={i} className="p-2"><input type="number" step="0.5" className="h-9 w-24 rounded-lg border bg-card px-2" value={p} onChange={(e) => { const arr = [...t.tramos[n]] as [number, number, number]; arr[i] = +e.target.value; set({ tramos: { ...t.tramos, [n]: arr } }); }} /></td>)}</tr>)}</tbody>
+          <tbody>{([1, 2] as const).map((n) => <tr key={n} className="border-t"><td className="p-2"><p className="text-xs text-muted-foreground">{ZONES.filter((z) => t.zoneTramo[z] === n).join(", ")}</p></td>{t.tramos[n].map((p, i) => <td key={i} className="p-2"><ValidatedInput type="number" step="0.5" className="h-9 w-24 rounded-lg border bg-card px-2" value={p} schema={priceSchema} onCommit={(v) => { const arr = [...t.tramos[n]] as [number, number, number]; arr[i] = Number(v); set({ tramos: { ...t.tramos, [n]: arr } }); }} /></td>)}</tr>)}</tbody>
         </table>
       </Card>
     </div>
