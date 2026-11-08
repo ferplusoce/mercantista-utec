@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authFailureReason, customerEmail, isValidPassword, isValidPhone, normalizePhone, safeReturnPath } from "./customer-auth";
+import { authFailureReason, authMessage, customerEmail, isValidPassword, isValidPhone, normalizePhone, safeReturnPath } from "./customer-auth";
 
 describe("customer credentials", () => {
   it("accepts only a 9-digit mobile number beginning with 9", () => {
@@ -11,9 +11,9 @@ describe("customer credentials", () => {
   it("normalizes a formatted mobile number", () => {
     expect(normalizePhone("987 654 321")).toBe("987654321");
   });
-  it("requires a password of at least 6 characters", () => {
-    expect(isValidPassword("12345")).toBe(false);
-    expect(isValidPassword("123456")).toBe(true);
+  it("requires a password of at least 8 characters with no character rules", () => {
+    expect(isValidPassword("1234567")).toBe(false);
+    expect(isValidPassword("bodega26")).toBe(true);
   });
   it("uses the requested internal customer email", () => {
     expect(customerEmail("987654321")).toBe("987654321@clientes.mercantista.pe");
@@ -27,7 +27,6 @@ describe("customer credentials", () => {
 
 describe("authentication failure classification", () => {
   it.each([
-    ["weak_password", "weak_password"],
     ["user_already_exists", "account_exists"],
     ["email_exists", "account_exists"],
     ["invalid_credentials", "invalid_credentials"],
@@ -38,8 +37,14 @@ describe("authentication failure classification", () => {
   ])("classifies %s independently of English wording", (code, reason) => {
     expect(authFailureReason({ code })).toBe(reason);
   });
-  it("recognizes the actual logged password rejection without a code", () => {
-    expect(authFailureReason(new Error("Password is known to be weak and easy to guess, please choose a different one."))).toBe("weak_password");
+  it("maps weak_password reasons to separate messages", () => {
+    expect(authMessage({ code: "weak_password", reasons: ["length"] })).toBe("Usa al menos 8 caracteres");
+    expect(authMessage({ code: "weak_password", reasons: ["pwned"] })).toBe("Esa contraseña es muy conocida, elige otra");
+    expect(authMessage({ code: "user_already_exists" })).toBe("Ese celular ya tiene cuenta, inicia sesión");
+    expect(authMessage({ code: "invalid_credentials" })).toBe("Celular o contraseña incorrectos");
+  });
+  it("recognizes the logged pwned rejection without a code", () => {
+    expect(authFailureReason(new Error("Password is known to be weak and easy to guess, please choose a different one."))).toBe("password_pwned");
   });
   it("distinguishes network failure from invalid input", () => {
     expect(authFailureReason(new TypeError("Failed to fetch"))).toBe("connection");
