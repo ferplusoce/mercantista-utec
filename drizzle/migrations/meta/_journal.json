@@ -8,6 +8,13 @@
       "when": 1794025112025,
       "tag": "0000_customer_accounts_and_private_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794111913173,
+      "tag": "0001_allow_photo_approval_order_updates",
+      "breakpoints": true
     }
   ]
 }
