@@ -33,11 +33,12 @@ async function resolveImages(paths: string[]) {
 export async function refreshCatalog() {
   if (cat.error) set({ loaded: false, error: false });
   try {
+  const signal = AbortSignal.timeout(12000);
   const [c, v, p, s] = await Promise.all([
-    supabase.from("categories").select("*").order("sort_order"),
-    supabase.from("vendors").select("*").order("stall"),
-    supabase.from("products").select("*").order("name"),
-    supabase.from("settings").select("*").eq("id", 1).maybeSingle(),
+    supabase.from("categories").select("*").order("sort_order").abortSignal(signal),
+    supabase.from("vendors").select("*").order("stall").abortSignal(signal),
+    supabase.from("products").select("*").order("name").abortSignal(signal),
+    supabase.from("settings").select("*").eq("id", 1).maybeSingle().abortSignal(signal),
   ]);
   if (c.error || v.error || p.error || s.error) { set({ loaded: true, error: true }); return; }
   const img = await resolveImages([...(c.data ?? []).map((x) => x.image_url ?? ""), ...(p.data ?? []).map((x) => x.image_url ?? "")]);
