@@ -9,6 +9,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { adminDashboardOptions, requireAdminRole } from "@/lib/admin";
 import { AdminCategories, AdminImageUpload as ImgUpload, ProductEditor, VendorEditor } from "@/components/AdminCatalogForms";
 import { Button } from "@/components/ui/button";
+import { BatchPhotoUpload } from "@/components/BatchPhotoUpload";
+import { pendingProductPriceSchema, photoTypeLabel, type PhotoType } from "@/lib/catalog-photos";
 import { Pause, Play, Plus, Trash2, Pencil, MessageCircle } from "lucide-react";
 import { ZONES, soles, type Vendor, type Availability, type Product } from "@/lib/data";
 import { bulkPrice, deleteProduct, patchProduct, patchSettings, patchVendor, useCatalog } from "@/lib/catalog";
@@ -152,6 +154,7 @@ function Productos() {
   const add = () => setEditor(null);
   return (
     <div className="space-y-4">
+    <BatchPhotoUpload kind="products" />
     {editor !== undefined && <ProductEditor product={editor} onClose={() => setEditor(undefined)} />}
     <Card className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 rounded-xl bg-muted p-3 text-sm">
@@ -165,14 +168,14 @@ function Productos() {
         <thead className="text-left text-muted-foreground"><tr><th className="p-2">Foto</th><th className="p-2">Producto</th><th className="p-2">Presentación</th><th className="p-2">Categoría</th><th className="p-2">Puesto</th><th className="p-2">Precio S/</th><th className="p-2">Disponibilidad</th><th className="p-2">Visible</th><th /></tr></thead>
         <tbody>{products.map((p) => (
           <tr key={p.id} className={`border-t ${p.active ? "" : "opacity-60"}`}>
-            <td className="p-2"><ImgUpload kind="products" id={p.id} src={p.image} name={p.name} /></td>
+            <td className="p-2"><ImgUpload kind="products" id={p.id} src={p.image} name={p.name} photoType={p.photoType} /><select aria-label={`Tipo de foto de ${p.name}`} className="mt-2 h-11 rounded-lg border bg-card px-2" value={p.photoType ?? ""} onChange={(e) => patch(p.id, { photoType: e.target.value as PhotoType })}><option value="" disabled>Tipo de foto</option>{(["puesto", "referencial"] as const).map((v) => <option key={v} value={v}>{photoTypeLabel(v)}</option>)}</select></td>
             <td className="p-2"><ValidatedInput className="h-9 w-48 rounded-lg border bg-card px-2" value={p.name} schema={z.string().trim().min(1, "Escribe el producto").max(200, "Máximo 200 caracteres")} onCommit={(v) => patch(p.id, { name: v })} /></td>
             <td className="p-2"><ValidatedInput className="h-9 w-40 rounded-lg border bg-card px-2" value={p.unit} schema={z.string().trim().min(1, "Escribe la presentación").max(100, "Máximo 100 caracteres")} onCommit={(v) => patch(p.id, { unit: v })} /></td>
             <td className="p-2"><select className="h-9 rounded-lg border bg-card px-2" value={p.category} onChange={(e) => patch(p.id, { category: e.target.value })}><option value="">Otros</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name.split(",")[0]}</option>)}</select></td>
             <td className="p-2"><select className="h-9 rounded-lg border bg-card px-2" value={p.vendorId} onChange={(e) => patch(p.id, { vendorId: e.target.value })}>{vendors.map((v) => <option key={v.id} value={v.id}>{v.stall}</option>)}</select></td>
-            <td className="p-2"><ValidatedInput type="number" step="0.5" className="h-9 w-24 rounded-lg border bg-card px-2" value={p.price} schema={priceSchema} onCommit={(v) => patch(p.id, { price: Number(v) })} /></td>
+            <td className="p-2"><ValidatedInput type="number" step="0.5" className="h-9 w-24 rounded-lg border bg-card px-2" value={p.price} schema={p.availability === "por_confirmar" ? pendingProductPriceSchema : priceSchema} onCommit={(v) => patch(p.id, { price: Number(v) })} /></td>
             <td className="p-2"><select className="h-9 rounded-lg border bg-card px-2" value={p.availability} onChange={(e) => patch(p.id, { availability: e.target.value as Availability })}><option value="disponible">Disponible hoy</option><option value="agotado">Agotado en Unicachi</option><option value="por_confirmar">Precio por confirmar</option></select></td>
-            <td className="p-2"><input type="checkbox" className="h-5 w-5" checked={p.active} onChange={(e) => patch(p.id, { active: e.target.checked })} /></td>
+            <td className="p-2"><input type="checkbox" className="h-5 w-5" checked={p.active && p.price > 0} disabled={p.price === 0} onChange={(e) => patch(p.id, { active: e.target.checked })} /></td>
             <td className="p-2"><Button variant="ghost" size="icon" title="Editar producto" aria-label={`Editar ${p.name}`} onClick={() => setEditor(p)}><Pencil /></Button><Button aria-label="Eliminar" onClick={async () => { if (confirm(`¿Eliminar ${p.name}?`)) (await deleteProduct(p.id)) || saveErr(); }}><Trash2 className="h-4 w-4" /></Button></td>
           </tr>
         ))}</tbody>
