@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { LockKeyhole, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +42,7 @@ function AuthPage() {
     if (!loading && user) void navigate({ href: destination, replace: true });
   }, [loading, user, destination, navigate]);
 
-  const submit = async (event: React.FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
     if (!isValidPhone(phone)) { setError("Ingresa un celular de 9 dígitos que empiece con 9"); return; }

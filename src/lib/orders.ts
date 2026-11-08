@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Order, OrderStatus } from "./store";
+import { useAuth } from "./auth";
 
 type Row = {
   code: string; created_at: string; business: string; contact: string; phone: string; service: string; status: string;
@@ -22,7 +22,7 @@ export function fromRow(r: Row): Order {
   };
 }
 
-/** Guarda un pedido nuevo en la base de datos y devuelve el código asignado. */
+/** Guarda un pedido del usuario autenticado y devuelve el código asignado. */
 export async function createOrder(o: Omit<Order, "code" | "createdAt" | "status" | "history" | "paymentStatus">): Promise<string> {
   const { data, error } = await supabase.rpc("create_order", { p: {
     business: o.business, contact: o.contact, phone: o.phone, service: o.service, items: o.items,
@@ -45,10 +45,22 @@ export function useOrderByCode(code?: string) {
   return useQuery({ queryKey: ["order", code?.toUpperCase()], queryFn: () => fetchOrderByCode(code!), enabled: !!code, refetchInterval: 30_000 });
 }
 
+export function useMyOrders() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["orders", "mine", user?.id], enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data as Row[]).map(fromRow);
+    },
+  });
+}
+
 /** Solo administradores (la base de datos bloquea al resto). */
 export function useAllOrders(enabled = true) {
   return useQuery({
-    queryKey: ["orders"], enabled,
+    queryKey: ["orders", "all"], enabled,
     queryFn: async () => {
       const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
       if (error) throw error;
@@ -77,20 +89,16 @@ export function useOrderMutations() {
   };
 }
 
-/** Sesión y rol de administrador. */
+/** Sesión y rol de administrador, usando la única suscripción de sesión de la raíz. */
 export function useAdmin() {
-  const [state, setState] = useState<{ loading: boolean; email?: string; isAdmin: boolean }>({ loading: true, isAdmin: false });
-  useEffect(() => {
-    const check = async () => {
-      const { data } = await supabase.auth.getUser();
-      const u = data.user;
-      if (!u) return setState({ loading: false, isAdmin: false });
-      const { data: r } = await supabase.rpc("has_role", { _user_id: u.id, _role: "admin" });
-      setState({ loading: false, email: u.email, isAdmin: !!r });
-    };
-    check();
-    const { data: sub } = supabase.auth.onAuthStateChange((e) => { if (e === "SIGNED_IN" || e === "SIGNED_OUT") check(); });
-    return () => sub.subscription.unsubscribe();
-  }, []);
-  return state;
+  const { user, loading } = useAuth();
+  const role = useQuery({
+    queryKey: ["admin-role", user?.id], enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("has_role", { _user_id: user!.id, _role: "admin" });
+      if (error) throw error;
+      return !!data;
+    },
+  });
+  return { loading: loading || (!!user && role.isLoading), email: user?.email, isAdmin: !!role.data };
 }
