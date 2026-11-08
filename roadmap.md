@@ -1,7 +1,7 @@
 # Team feedback
-- [ ] Apply shared Zod rules and Spanish field errors across customer and admin forms.
-- [ ] Enforce matching Cloud validation and photo limits without altering historical data.
-- [ ] Test rule boundaries and verify customer/admin form flows.
+- [x] Apply shared Zod rules and Spanish field errors across customer and admin forms.
+- [x] Enforce matching Cloud validation and photo limits without altering historical data.
+- [x] Test rule boundaries and verify customer/admin form flows (42 tests; registration, profile, address, taxi, purchase, request, photo formats/size and admin price rejection).
 - [x] Rename delivery labels without changing tariffs.
 - [x] Normalize old opinion delivery values in reporting and CSV.
 - [x] Add first-visit welcome and home steps.
