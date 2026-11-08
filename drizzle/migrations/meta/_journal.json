@@ -43,6 +43,13 @@
       "when": 1794175631276,
       "tag": "0005_handle_storage_empty_preflight_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794175720033,
+      "tag": "0006_complete_write_validation",
+      "breakpoints": true
     }
   ]
 }
