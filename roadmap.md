@@ -1,4 +1,6 @@
 # Team feedback
+- [ ] Diagnose signup logs, replace generic authentication errors, and verify real phone signup/login.
+- [ ] Verify intended administrator signup roles safely (blocked: accounts absent and phone ownership unverified; never auto-grant from an unverified number).
 - [x] Restrict install button to eligible Android and iPhone Safari, never installed or desktop (browser event simulation and Safari instructions verified).
 - [x] Verify customer screens at 360px and ensure buttons are at least 44px tall; correct cart overflow and shared dialog controls.
 - [ ] Verify admin screens at 360px with a real admin session (blocked: no current admin account; old operator was retired).
