@@ -5,7 +5,7 @@ import { useCatalog } from "@/lib/catalog";
 import { PriceNote, ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/puestos/$id")({
-  loader: async ({ params }) => { const { data: v } = await supabase.from("vendors").select("name, stall").eq("id", params.id).maybeSingle(); if (!v) throw notFound(); return { name: v.name, stall: v.stall }; },
+  loader: async ({ params }) => { const { data: v, error } = await supabase.from("vendors").select("name, stall").eq("id", params.id).maybeSingle(); if (error) throw error; if (!v) throw notFound(); return { name: v.name, stall: v.stall }; },
   head: ({ loaderData }) => ({ meta: [
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
@@ -35,7 +35,7 @@ function Puesto() {
           <span className="flex items-center gap-1"><MapPin className="h-4 w-4 text-primary" />Mercado Mayorista Unicachi</span>
           {v.verified && <span className="flex items-center gap-1 font-medium text-success"><BadgeCheck className="h-4 w-4" />Puesto verificado por Mercantista</span>}
         </div>
-        <Link to="/solicitud" search={{ vendor: v.id }} className="mt-5 inline-flex h-11 items-center rounded-xl border px-4 text-sm font-semibold hover:bg-muted">Pedir un producto especial a este puesto</Link>
+        <Link to="/solicitud" search={{ vendor: v.id }} className="mt-5 inline-flex min-h-11 items-center rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-muted">Pedir un producto especial a este puesto</Link>
       </div>
       <PriceNote />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{products.map((p) => <ProductCard key={p.id} p={p} />)}</div>

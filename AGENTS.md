@@ -19,3 +19,5 @@
 - Admin pages live under the authenticated layout with a separate role guard; privileged reports re-check admin inside the database RPC, and navigation uses the same server-backed role lookup.
 - Admin dashboard reporting aggregates persisted orders in Lima time; distinguish paid income from order sales and exclude canceled orders.
 - Product/category photos live in the private `product-images` bucket (public buckets are blocked by workspace policy); `image_url` stores the storage path and the app resolves signed URLs; uploads are shrunk client-side to ≤640px WebP for low-end phones.
+- Keep installability manifest-only; browser events determine Android eligibility and iPhone Safari uses instructions, without app-shell service workers.
+- Use shared DataState skeleton/error controls for remote reads and a catalog gate for catalog-dependent screens, so failed reads never masquerade as empty data.

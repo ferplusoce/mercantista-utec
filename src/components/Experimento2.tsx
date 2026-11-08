@@ -3,6 +3,7 @@ import { Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GOAL, OP_ZONES, computeStats, deliveryBreakdown, toCSV, type Opinion } from "@/lib/opinions";
 import { Card } from "@/components/Field";
+import { DataSkeleton, ConnectionError } from "@/components/DataState";
 
 function Kpi({ l, v, ok, meta }: { l: string; v: string; ok: boolean; meta: string }) {
   return (
@@ -35,6 +36,8 @@ export function Experimento2() {
     const blob = new Blob(["\ufeff" + toCSV(list)], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `opiniones-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
   };
+  if (q.isLoading) return <DataSkeleton />;
+  if (q.isError) return <ConnectionError retry={q.refetch} />;
   return (
     <div className="space-y-4">
       <Card className="flex flex-wrap items-center justify-between gap-3">

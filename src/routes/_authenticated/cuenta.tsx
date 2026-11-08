@@ -9,6 +9,7 @@ import { Card, Field, inputCls } from "@/components/Field";
 import { profileSchema, accountAddressSchema, taxiSchema, fieldErrors, formatPlate, digits } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { Welcome } from "@/components/Welcome";
+import { DataSkeleton, ConnectionError } from "@/components/DataState";
 
 export const Route = createFileRoute("/_authenticated/cuenta")({
   head: () => ({ meta: [
@@ -56,7 +57,7 @@ function Cuenta() {
         <div className="flex items-center gap-2"><Welcome /><button onClick={() => void signOut()} className="inline-flex h-10 items-center rounded-xl border px-3 text-sm font-semibold"><LogOut className="mr-1 h-4 w-4" />Salir</button></div>
       </div>
       <p className="text-sm text-muted-foreground">Tus datos se guardan de forma privada en tu cuenta.</p>
-      {account.isLoading ? <Card>Cargando tu cuenta...</Card> : account.isError ? <Card className="text-destructive">No pudimos cargar tus datos. Inténtalo otra vez.</Card> : <>
+      {account.isLoading ? <DataSkeleton /> : account.isError ? <ConnectionError retry={account.refetch} /> : <>
         <Card className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             <Field error={pe.business} label="Bodega / negocio" required><input className={inputCls} value={profile.business} onChange={(e) => setProfile({ ...profile, business: e.target.value })} /></Field>

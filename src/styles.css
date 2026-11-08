@@ -149,4 +149,12 @@
   }
 }
 
-@layer base { h1,h2,h3 { font-family: var(--font-display); letter-spacing: -0.02em; } }
+@layer base { h1,h2,h3 { font-family: var(--font-display); letter-spacing: 0; } }
+
+/* Touch targets include legacy controls and dialog dismiss buttons. */
+button, [role="button"] { min-height: 44px; }
+button:has(> svg:only-child) { min-width: 44px; }
+@media (max-width: 639px) {
+  main { min-width: 0; }
+  main input:not([type="checkbox"]):not([type="radio"]), main select, main textarea { min-width: 0; max-width: 100%; }
+}
