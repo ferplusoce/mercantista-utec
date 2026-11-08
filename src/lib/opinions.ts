@@ -1,6 +1,8 @@
+import { ZONES } from "./data";
+import { opinionSchema } from "./validation";
 import { supabase } from "@/integrations/supabase/client";
 
-export const OP_ZONES = ["Lurín", "Pachacámac", "Villa El Salvador", "Entrada de Unicachi", "Otra"];
+export const OP_ZONES = [...ZONES];
 export const OP_SERVICES = { tipo1: "Tipo 1 · En mi taxi (S/ 50)", tipo2: "Tipo 2 · Hasta mi bodega o almacén (desde S/ 100)" } as const;
 export function deliveryType(value: string | null): keyof typeof OP_SERVICES | null {
   if (value === "tipo1" || value === "taxi") return "tipo1";
@@ -37,6 +39,7 @@ export function markOrderSent(code: string) {
 }
 
 export async function submitOpinion(o: { zona: string; armo_sin_ayuda: boolean; satisfaccion: number; lo_usaria: string; servicio_preferido: string; precio_justo: string; comentario: string; whatsapp: string }) {
+  opinionSchema.parse({ zona: o.zona, sinAyuda: o.armo_sin_ayuda ? "si" : "no", sat: o.satisfaccion, usaria: o.lo_usaria, serv: o.servicio_preferido, precio: o.precio_justo, comentario: o.comentario, whatsapp: o.whatsapp });
   const sec = sessionStorage.getItem(K_SEC);
   const { error } = await supabase.from("opinions").insert({
     ...o, comentario: o.comentario || null, whatsapp: o.whatsapp || null, precio_justo: o.precio_justo || null,

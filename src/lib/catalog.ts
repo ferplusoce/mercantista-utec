@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_TARIFFS, type Tariffs } from "./pricing";
+import { z } from "zod";
+import { priceSchema, photoSchema, optionalPhoneSchema, personSchema } from "./validation";
 import type { Availability, CategoryInfo, Product, Vendor } from "./data";
 
 /** Catálogo compartido leído desde Lovable Cloud (categorías, puestos, productos y ajustes). */
@@ -78,8 +80,11 @@ const productRow = (p: Partial<Product>) => {
 };
 
 export function patchProduct(id: string, p: Partial<Product>, onError: () => void) {
+  if (p.price !== undefined && !priceSchema.safeParse(p.price).success) { onError(); return; }
+  if (p.name !== undefined && !z.string().trim().min(1).max(200).safeParse(p.name).success) { onError(); return; }
+  if (p.unit !== undefined && !z.string().trim().min(1).max(100).safeParse(p.unit).success) { onError(); return; }
   set({ products: cat.products.map((x) => (x.id === id ? { ...x, ...p } : x)) });
-  debounce(`p:${id}`, async () => supabase.from("products").update(productRow(p) as never).eq("id", id), onError);
+  debounce(`p:${id}:${Object.keys(p).join(",")}`, async () => supabase.from("products").update(productRow(p) as never).eq("id", id), onError);
 }
 export async function addProduct(vendorId: string) {
   const { error } = await supabase.from("products").insert({ name: "Nuevo producto", vendor_id: vendorId, category_id: "hortalizas", unit: "Saco de 50 kg", format: "Saco", weight_kg: 50, price: 50, availability: "por_confirmar", description: "Producto agregado por el operador." });
@@ -93,6 +98,7 @@ export async function deleteProduct(id: string) {
 }
 export async function bulkPrice(pct: number) {
   const updates = cat.products.map((x) => ({ id: x.id, price: Math.round(x.price * (1 + pct / 100) * 2) / 2 }));
+  if (!z.number().finite().min(-99).max(99).safeParse(pct).success || updates.some((u) => !priceSchema.safeParse(u.price).success)) return false;
   const res = await Promise.all(updates.map((u) => supabase.from("products").update({ price: u.price }).eq("id", u.id)));
   await refreshCatalog();
   return res.every((r) => !r.error);
@@ -100,8 +106,10 @@ export async function bulkPrice(pct: number) {
 
 const vendorRow = (v: Partial<Vendor>) => { const { id: _id, ...rest } = v; return rest; };
 export function patchVendor(id: string, v: Partial<Vendor>, onError: () => void) {
+  if (v.phone !== undefined && !optionalPhoneSchema.safeParse(v.phone).success) { onError(); return; }
+  if (v.contact !== undefined && v.contact !== "" && !personSchema.safeParse(v.contact).success) { onError(); return; }
   set({ vendors: cat.vendors.map((x) => (x.id === id ? { ...x, ...v } : x)) });
-  debounce(`v:${id}`, async () => supabase.from("vendors").update(vendorRow(v)).eq("id", id), onError);
+  debounce(`v:${id}:${Object.keys(v).join(",")}`, async () => supabase.from("vendors").update(vendorRow(v)).eq("id", id), onError);
 }
 export async function addVendor() {
   const { error } = await supabase.from("vendors").insert({ id: `v-${Date.now()}`, name: "Nuevo puesto", stall: "F-01", pavilion: "F", schedule: "03:00 am - 11:00 am" });
@@ -116,6 +124,7 @@ export async function deleteVendor(id: string) {
 
 export function patchSettings(t: Partial<Tariffs>, onError: () => void) {
   const next = { ...cat.tariffs, ...t };
+  if (!priceSchema.safeParse(next.taxiFlat).success || Object.values(next.tramos).flat().some((p) => !priceSchema.safeParse(p).success) || !/^519\d{8}$/.test(next.whatsapp)) { onError(); return; }
   set({ tariffs: next });
   const { whatsapp, ...tariffs } = next;
   debounce("settings", async () => supabase.from("settings").update({ tariffs: tariffs as never, whatsapp }).eq("id", 1), onError);
@@ -123,11 +132,15 @@ export function patchSettings(t: Partial<Tariffs>, onError: () => void) {
 
 /** Reduce la foto en el celular (máx. 640 px, WebP) antes de subirla, para que cargue liviana. */
 export async function shrinkImage(file: File, max = 640): Promise<Blob> {
+  photoSchema.parse(file);
   const bmp = await createImageBitmap(file);
   const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bmp.width * scale); canvas.height = Math.round(bmp.height * scale);
-  canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("No se pudo procesar la foto");
+  context.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close();
   return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("No se pudo procesar la foto"))), "image/webp", 0.72));
 }
 

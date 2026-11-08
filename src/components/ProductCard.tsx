@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { soles, type Product } from "@/lib/data";
 import { addToCart } from "@/lib/store";
 import { useCatalog } from "@/lib/catalog";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 
@@ -26,9 +27,9 @@ export function ProductImage({ p, big }: { p: Product; big?: boolean }) {
 export function QtyPicker({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
     <div className="flex items-center rounded-xl border bg-card">
-      <button className="p-2.5" onClick={() => onChange(Math.max(1, value - 1))} aria-label="Menos"><Minus className="h-4 w-4" /></button>
+      <Button variant="ghost" size="icon" disabled={value <= 1} onClick={() => onChange(value - 1)} aria-label="Menos"><Minus className="h-4 w-4" /></Button>
       <span className="w-8 text-center font-semibold tabular-nums">{value}</span>
-      <button className="p-2.5" onClick={() => onChange(value + 1)} aria-label="Más"><Plus className="h-4 w-4" /></button>
+      <Button variant="ghost" size="icon" disabled={value >= 50} onClick={() => onChange(value + 1)} aria-label="Más"><Plus className="h-4 w-4" /></Button>
     </div>
   );
 }
