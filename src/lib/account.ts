@@ -41,7 +41,7 @@ export function useAccountActions() {
   return {
     saveProfile: async (profile: AccountProfile) => {
       const u = requireUser();
-      const { error } = await supabase.from("profiles").upsert({ user_id: u.id, business_name: profile.business.trim(), owner_name: profile.owner_name?.trim?.() ?? profile.owner.trim(), phone: profile.phone, doc_type: profile.docType, doc_number: profile.docNumber.trim() });
+      const { error } = await supabase.from("profiles").upsert({ user_id: u.id, business_name: profile.business.trim(), owner_name: profile.owner.trim(), phone: profile.phone, doc_type: profile.docType, doc_number: profile.docNumber.trim() });
       if (error) throw error;
       await refresh();
     },

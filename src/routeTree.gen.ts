@@ -10,21 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CarritoRouteImport } from './routes/carrito'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
-import { Route as CheckoutRouteImport } from './routes/checkout'
-import { Route as CuentaRouteImport } from './routes/cuenta'
 import { Route as OpinionRouteImport } from './routes/opinion'
-import { Route as SeguimientoRouteImport } from './routes/seguimiento'
 import { Route as ServiciosRouteImport } from './routes/servicios'
-import { Route as SolicitudRouteImport } from './routes/solicitud'
+import { Route as AuthenticatedCheckoutRouteImport } from './routes/_authenticated/checkout'
+import { Route as AuthenticatedCuentaRouteImport } from './routes/_authenticated/cuenta'
+import { Route as AuthenticatedSeguimientoRouteImport } from './routes/_authenticated/seguimiento'
+import { Route as AuthenticatedSolicitudRouteImport } from './routes/_authenticated/solicitud'
 import { Route as PuestosIndexRouteImport } from './routes/puestos.index'
 import { Route as PuestosIdRouteImport } from './routes/puestos.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -42,24 +47,9 @@ const CatalogoRoute = CatalogoRouteImport.update({
   path: '/catalogo',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CheckoutRoute = CheckoutRouteImport.update({
-  id: '/checkout',
-  path: '/checkout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CuentaRoute = CuentaRouteImport.update({
-  id: '/cuenta',
-  path: '/cuenta',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const OpinionRoute = OpinionRouteImport.update({
   id: '/opinion',
   path: '/opinion',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SeguimientoRoute = SeguimientoRouteImport.update({
-  id: '/seguimiento',
-  path: '/seguimiento',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServiciosRoute = ServiciosRouteImport.update({
@@ -67,10 +57,26 @@ const ServiciosRoute = ServiciosRouteImport.update({
   path: '/servicios',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SolicitudRoute = SolicitudRouteImport.update({
+const AuthenticatedCheckoutRoute = AuthenticatedCheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCuentaRoute = AuthenticatedCuentaRouteImport.update({
+  id: '/cuenta',
+  path: '/cuenta',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSeguimientoRoute =
+  AuthenticatedSeguimientoRouteImport.update({
+    id: '/seguimiento',
+    path: '/seguimiento',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSolicitudRoute = AuthenticatedSolicitudRouteImport.update({
   id: '/solicitud',
   path: '/solicitud',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const PuestosIndexRoute = PuestosIndexRouteImport.update({
   id: '/puestos/',
@@ -88,12 +94,12 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/carrito': typeof CarritoRoute
   '/catalogo': typeof CatalogoRoute
-  '/checkout': typeof CheckoutRoute
-  '/cuenta': typeof CuentaRoute
   '/opinion': typeof OpinionRoute
-  '/seguimiento': typeof SeguimientoRoute
   '/servicios': typeof ServiciosRoute
-  '/solicitud': typeof SolicitudRoute
+  '/checkout': typeof AuthenticatedCheckoutRoute
+  '/cuenta': typeof AuthenticatedCuentaRoute
+  '/seguimiento': typeof AuthenticatedSeguimientoRoute
+  '/solicitud': typeof AuthenticatedSolicitudRoute
   '/puestos/$id': typeof PuestosIdRoute
   '/puestos/': typeof PuestosIndexRoute
 }
@@ -102,27 +108,28 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/carrito': typeof CarritoRoute
   '/catalogo': typeof CatalogoRoute
-  '/checkout': typeof CheckoutRoute
-  '/cuenta': typeof CuentaRoute
   '/opinion': typeof OpinionRoute
-  '/seguimiento': typeof SeguimientoRoute
   '/servicios': typeof ServiciosRoute
-  '/solicitud': typeof SolicitudRoute
+  '/checkout': typeof AuthenticatedCheckoutRoute
+  '/cuenta': typeof AuthenticatedCuentaRoute
+  '/seguimiento': typeof AuthenticatedSeguimientoRoute
+  '/solicitud': typeof AuthenticatedSolicitudRoute
   '/puestos/$id': typeof PuestosIdRoute
   '/puestos': typeof PuestosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/admin': typeof AdminRoute
   '/carrito': typeof CarritoRoute
   '/catalogo': typeof CatalogoRoute
-  '/checkout': typeof CheckoutRoute
-  '/cuenta': typeof CuentaRoute
   '/opinion': typeof OpinionRoute
-  '/seguimiento': typeof SeguimientoRoute
   '/servicios': typeof ServiciosRoute
-  '/solicitud': typeof SolicitudRoute
+  '/_authenticated/checkout': typeof AuthenticatedCheckoutRoute
+  '/_authenticated/cuenta': typeof AuthenticatedCuentaRoute
+  '/_authenticated/seguimiento': typeof AuthenticatedSeguimientoRoute
+  '/_authenticated/solicitud': typeof AuthenticatedSolicitudRoute
   '/puestos/$id': typeof PuestosIdRoute
   '/puestos/': typeof PuestosIndexRoute
 }
@@ -133,11 +140,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/carrito'
     | '/catalogo'
+    | '/opinion'
+    | '/servicios'
     | '/checkout'
     | '/cuenta'
-    | '/opinion'
     | '/seguimiento'
-    | '/servicios'
     | '/solicitud'
     | '/puestos/$id'
     | '/puestos/'
@@ -147,41 +154,39 @@ export interface FileRouteTypes {
     | '/admin'
     | '/carrito'
     | '/catalogo'
+    | '/opinion'
+    | '/servicios'
     | '/checkout'
     | '/cuenta'
-    | '/opinion'
     | '/seguimiento'
-    | '/servicios'
     | '/solicitud'
     | '/puestos/$id'
     | '/puestos'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/admin'
     | '/carrito'
     | '/catalogo'
-    | '/checkout'
-    | '/cuenta'
     | '/opinion'
-    | '/seguimiento'
     | '/servicios'
-    | '/solicitud'
+    | '/_authenticated/checkout'
+    | '/_authenticated/cuenta'
+    | '/_authenticated/seguimiento'
+    | '/_authenticated/solicitud'
     | '/puestos/$id'
     | '/puestos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AdminRoute: typeof AdminRoute
   CarritoRoute: typeof CarritoRoute
   CatalogoRoute: typeof CatalogoRoute
-  CheckoutRoute: typeof CheckoutRoute
-  CuentaRoute: typeof CuentaRoute
   OpinionRoute: typeof OpinionRoute
-  SeguimientoRoute: typeof SeguimientoRoute
   ServiciosRoute: typeof ServiciosRoute
-  SolicitudRoute: typeof SolicitudRoute
   PuestosIdRoute: typeof PuestosIdRoute
   PuestosIndexRoute: typeof PuestosIndexRoute
 }
@@ -193,6 +198,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -216,32 +228,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CatalogoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/checkout': {
-      id: '/checkout'
-      path: '/checkout'
-      fullPath: '/checkout'
-      preLoaderRoute: typeof CheckoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cuenta': {
-      id: '/cuenta'
-      path: '/cuenta'
-      fullPath: '/cuenta'
-      preLoaderRoute: typeof CuentaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/opinion': {
       id: '/opinion'
       path: '/opinion'
       fullPath: '/opinion'
       preLoaderRoute: typeof OpinionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/seguimiento': {
-      id: '/seguimiento'
-      path: '/seguimiento'
-      fullPath: '/seguimiento'
-      preLoaderRoute: typeof SeguimientoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/servicios': {
@@ -251,12 +242,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServiciosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/solicitud': {
-      id: '/solicitud'
+    '/_authenticated/checkout': {
+      id: '/_authenticated/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof AuthenticatedCheckoutRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cuenta': {
+      id: '/_authenticated/cuenta'
+      path: '/cuenta'
+      fullPath: '/cuenta'
+      preLoaderRoute: typeof AuthenticatedCuentaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/seguimiento': {
+      id: '/_authenticated/seguimiento'
+      path: '/seguimiento'
+      fullPath: '/seguimiento'
+      preLoaderRoute: typeof AuthenticatedSeguimientoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/solicitud': {
+      id: '/_authenticated/solicitud'
       path: '/solicitud'
       fullPath: '/solicitud'
-      preLoaderRoute: typeof SolicitudRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedSolicitudRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/puestos/': {
       id: '/puestos/'
@@ -275,17 +287,31 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCheckoutRoute: typeof AuthenticatedCheckoutRoute
+  AuthenticatedCuentaRoute: typeof AuthenticatedCuentaRoute
+  AuthenticatedSeguimientoRoute: typeof AuthenticatedSeguimientoRoute
+  AuthenticatedSolicitudRoute: typeof AuthenticatedSolicitudRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCheckoutRoute: AuthenticatedCheckoutRoute,
+  AuthenticatedCuentaRoute: AuthenticatedCuentaRoute,
+  AuthenticatedSeguimientoRoute: AuthenticatedSeguimientoRoute,
+  AuthenticatedSolicitudRoute: AuthenticatedSolicitudRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AdminRoute: AdminRoute,
   CarritoRoute: CarritoRoute,
   CatalogoRoute: CatalogoRoute,
-  CheckoutRoute: CheckoutRoute,
-  CuentaRoute: CuentaRoute,
   OpinionRoute: OpinionRoute,
-  SeguimientoRoute: SeguimientoRoute,
   ServiciosRoute: ServiciosRoute,
-  SolicitudRoute: SolicitudRoute,
   PuestosIdRoute: PuestosIdRoute,
   PuestosIndexRoute: PuestosIndexRoute,
 }

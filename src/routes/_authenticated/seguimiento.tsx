@@ -8,7 +8,7 @@ import { Card } from "@/components/Field";
 import { useOrderByCode } from "@/lib/orders";
 import { ClientPhotos } from "@/components/PhotoApproval";
 
-export const Route = createFileRoute("/seguimiento")({
+export const Route = createFileRoute("/_authenticated/seguimiento")({
   validateSearch: (s: Record<string, unknown>) => ({ code: s.code as string | undefined }),
   head: () => ({ meta: [
     { property: "og:type", content: "website" },
