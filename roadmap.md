@@ -1,5 +1,5 @@
 # Team feedback
-- [ ] Diagnose signup logs, replace generic authentication errors, and verify real phone signup/login.
+- [x] Diagnose signup logs (weak/leaked password, HTTP 422), replace generic errors, and verify real signup, immediate session, login, wrong password and duplicate account (19 focused tests passed).
 - [ ] Verify intended administrator signup roles safely (blocked: accounts absent and phone ownership unverified; never auto-grant from an unverified number).
 - [x] Restrict install button to eligible Android and iPhone Safari, never installed or desktop (browser event simulation and Safari instructions verified).
 - [x] Verify customer screens at 360px and ensure buttons are at least 44px tall; correct cart overflow and shared dialog controls.
