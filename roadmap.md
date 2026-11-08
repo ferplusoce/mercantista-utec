@@ -1,7 +1,8 @@
 # Team feedback
-- [ ] Restrict install button to eligible Android and iPhone Safari, never installed or desktop.
-- [ ] Verify all screens at 360px and ensure buttons are at least 44px tall.
-- [ ] Add skeleton loading and clear connection errors with retry; verify failure/recovery.
+- [x] Restrict install button to eligible Android and iPhone Safari, never installed or desktop (browser event simulation and Safari instructions verified).
+- [x] Verify customer screens at 360px and ensure buttons are at least 44px tall; correct cart overflow and shared dialog controls.
+- [ ] Verify admin screens at 360px with a real admin session (blocked: no current admin account; old operator was retired).
+- [x] Add skeleton loading and clear connection errors with retry; verify failure/recovery (20 real catalog products restored, 50 tests passed).
 - [x] Replace fixed-key admin access with phone/password accounts and admin-only navigation.
 - [x] Complete orders, product and vendor management; add category editing and retain tariffs, requests and Experiment 2.
 - [x] Replace sample summaries/cost charts with real Cloud metrics and empty states.
