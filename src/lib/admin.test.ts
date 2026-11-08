@@ -1,0 +1,9 @@
+import { describe, expect, it } from "vitest";
+import { hasAdminRole, categoryFormSchema, productFormSchema, vendorFormSchema } from "./admin";
+
+describe("Administración", () => {
+  it("solo admin autoriza el panel", () => { expect(hasAdminRole(["admin"])).toBe(true); expect(hasAdminRole(["user"])).toBe(false); expect(hasAdminRole([])).toBe(false); });
+  it("orden de categorías entero y nombre obligatorio", () => { expect(categoryFormSchema.safeParse({ name: "Papas", sortOrder: 2 }).success).toBe(true); expect(categoryFormSchema.safeParse({ name: "", sortOrder: 2 }).success).toBe(false); expect(categoryFormSchema.safeParse({ name: "Papas", sortOrder: 1.5 }).success).toBe(false); });
+  it("crear producto requiere puesto, categoría y precio válido", () => { const p = { name: "Papa", category: "papas", vendorId: "v1", unit: "Saco", format: "Saco", weightKg: 50, price: 85, quality: "Primera", availability: "disponible", desc: "", active: true }; expect(productFormSchema.safeParse(p).success).toBe(true); expect(productFormSchema.safeParse({ ...p, vendorId: "" }).success).toBe(false); expect(productFormSchema.safeParse({ ...p, price: 1000 }).success).toBe(false); });
+  it("crear casero requiere número de puesto y pabellón", () => { const v = { name: "Casero prueba", stall: "A-12", pavilion: "A", contact: "", phone: "", specialty: "", schedule: "", active: true }; expect(vendorFormSchema.safeParse(v).success).toBe(true); expect(vendorFormSchema.safeParse({ ...v, stall: "" }).success).toBe(false); expect(vendorFormSchema.safeParse({ ...v, pavilion: "" }).success).toBe(false); });
+});
