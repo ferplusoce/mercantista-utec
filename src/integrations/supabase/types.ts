@@ -193,6 +193,8 @@ export type Database = {
           contact: string
           created_at: string
           delivery_date: string | null
+          doc_number: string | null
+          doc_type: string | null
           history: Json
           id: string
           items: Json
@@ -201,6 +203,7 @@ export type Database = {
           payment_plan: string | null
           payment_status: string
           phone: string
+          reference: string | null
           service: string
           service_fee: number
           shipping_fee: number
@@ -220,6 +223,8 @@ export type Database = {
           contact: string
           created_at?: string
           delivery_date?: string | null
+          doc_number?: string | null
+          doc_type?: string | null
           history?: Json
           id?: string
           items?: Json
@@ -228,6 +233,7 @@ export type Database = {
           payment_plan?: string | null
           payment_status?: string
           phone: string
+          reference?: string | null
           service: string
           service_fee?: number
           shipping_fee?: number
@@ -247,6 +253,8 @@ export type Database = {
           contact?: string
           created_at?: string
           delivery_date?: string | null
+          doc_number?: string | null
+          doc_type?: string | null
           history?: Json
           id?: string
           items?: Json
@@ -255,6 +263,7 @@ export type Database = {
           payment_plan?: string | null
           payment_status?: string
           phone?: string
+          reference?: string | null
           service?: string
           service_fee?: number
           shipping_fee?: number
@@ -389,6 +398,7 @@ export type Database = {
           id: string
           items: Json
           phone: string
+          reference: string | null
           status: string
           user_id: string | null
           zone: string
@@ -405,6 +415,7 @@ export type Database = {
           id?: string
           items?: Json
           phone: string
+          reference?: string | null
           status?: string
           user_id?: string | null
           zone: string
@@ -421,6 +432,7 @@ export type Database = {
           id?: string
           items?: Json
           phone?: string
+          reference?: string | null
           status?: string
           user_id?: string | null
           zone?: string
@@ -566,6 +578,8 @@ export type Database = {
           contact: string
           created_at: string
           delivery_date: string | null
+          doc_number: string | null
+          doc_type: string | null
           history: Json
           id: string
           items: Json
@@ -574,6 +588,7 @@ export type Database = {
           payment_plan: string | null
           payment_status: string
           phone: string
+          reference: string | null
           service: string
           service_fee: number
           shipping_fee: number
@@ -637,6 +652,10 @@ export type Database = {
           units: number
         }[]
       }
+      valid_address: { Args: { v: string }; Returns: boolean }
+      valid_person: { Args: { v: string }; Returns: boolean }
+      valid_served_zone: { Args: { v: string }; Returns: boolean }
+      validate_delivery_day: { Args: { v: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"

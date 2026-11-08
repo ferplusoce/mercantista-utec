@@ -1,0 +1,10 @@
+DO $$ DECLARE definition text; BEGIN SELECT pg_get_functiondef('public.validate_form_record()'::regprocedure) INTO definition;
+ definition:=replace(definition,' IF k=''price'' OR', E' IF TG_TABLE_NAME=''products'' AND k IN (''name'',''unit'') AND coalesce(length(btrim(v)),0) NOT BETWEEN 1 AND (CASE WHEN k=''name'' THEN 200 ELSE 100 END) THEN RAISE EXCEPTION ''Producto o presentación inválidos''; END IF;\n IF TG_TABLE_NAME=''vendors'' AND k IN (''stall'',''pavilion'',''specialty'',''schedule'') AND coalesce(length(v),0)>200 THEN RAISE EXCEPTION ''Máximo 200 caracteres''; END IF;\n IF k=''price'' OR');
+ definition:=replace(definition,' IF k=''items'' AND',E' IF k=''status'' AND TG_TABLE_NAME=''requests'' AND coalesce(v,'''') NOT IN (''pending'',''quoted'',''approved'',''rejected'') THEN RAISE EXCEPTION ''Estado inválido''; END IF;\n IF k=''status'' AND TG_TABLE_NAME=''orders'' AND coalesce(v,'''') NOT IN (''received'',''verifying'',''purchasing'',''staging'',''on_the_way'',''delivered'',''cancelled'') THEN RAISE EXCEPTION ''Estado inválido''; END IF;\n IF k=''items'' AND');
+ EXECUTE definition; END $$;
+CREATE OR REPLACE FUNCTION public.handle_new_user() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE phone text; BEGIN
+ phone:=coalesce(nullif(new.raw_user_meta_data->>'phone',''),case when new.email ~ '^9[0-9]{8}@clientes\.mercantista\.pe$' then split_part(new.email,'@',1) else '' end);
+ IF new.email LIKE '%@clientes.mercantista.pe' AND (new.email !~ '^9[0-9]{8}@clientes\.mercantista\.pe$' OR phone IS DISTINCT FROM split_part(new.email,'@',1)) THEN RAISE EXCEPTION 'Celular: ingresa 9 dígitos que empiecen con 9'; END IF;
+ INSERT INTO public.profiles(user_id,business_name,owner_name,phone,doc_type,doc_number) VALUES(new.id,coalesce(new.raw_user_meta_data->>'business_name',''),coalesce(new.raw_user_meta_data->>'owner_name',''),phone,coalesce(nullif(new.raw_user_meta_data->>'doc_type',''),'DNI'),coalesce(new.raw_user_meta_data->>'doc_number','')) ON CONFLICT(user_id) DO NOTHING;
+ RETURN new;
+END $$;
