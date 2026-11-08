@@ -10,7 +10,9 @@ import { OpinionForm } from "@/components/OpinionForm";
 import { useCatalog } from "@/lib/catalog";
 import { cartSummary, clearCart, useStore, type Order } from "@/lib/store";
 import { useAccount } from "@/lib/account";
-import { Card, Field, inputCls, requireFields } from "@/components/Field";
+import { checkoutSchema, fieldErrors, formatPlate, digits, deliveryBounds, nextDeliveryDate, quantitySchema } from "@/lib/validation";
+import { Button } from "@/components/ui/button";
+import { Card, Field, inputCls } from "@/components/Field";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({ meta: [
@@ -34,11 +36,13 @@ function Checkout() {
   const profile = account?.profile;
   const sum = cartSummary(cart, products);
   const [service, setService] = useState<Order["service"]>("minivan_delivery");
-  const [f, setF] = useState<Record<string, string>>({ business: "", contact: "", phone: "", date: new Date(Date.now() + 864e5).toISOString().slice(0, 10), slot: SLOTS[0], zone: ZONES[0], address: "", driver: "", plate: "", dphone: "", arrival: "05:00", meeting: "Puerta 2", plan: PLANS[0], method: METHODS[0], doc: "", razon: "", billAddr: "" });
-  const [err, setErr] = useState<Record<string, string>>({});
+  const [f, setF] = useState<Record<string, string>>({ business: "", contact: "", phone: "", date: nextDeliveryDate(), slot: SLOTS[0], zone: ZONES[0], address: "", reference: "", docType: "DNI", driver: "", plate: "", dphone: "", arrival: "05:00", meeting: "Puerta 2", plan: PLANS[0], method: METHODS[0], doc: "", razon: "", billAddr: "" });
+  const [attempted, setAttempted] = useState(false);
+  const err = attempted ? fieldErrors(checkoutSchema, { ...f, service }) : {};
+  const bounds = deliveryBounds();
   const [done, setDone] = useState<Order | null>(null);
   const [saving, setSaving] = useState(false);
-  const set = (k: string) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+  const set = (k: string) => (e: { target: { value: string } }) => setF({ ...f, [k]: ["phone", "dphone", "doc"].includes(k) ? digits(e.target.value) : k === "plate" ? formatPlate(e.target.value) : e.target.value });
 
   useEffect(() => {
     if (!account) return;
@@ -48,7 +52,7 @@ function Checkout() {
       contact: current.contact || account.profile.owner,
       phone: current.phone || account.profile.phone,
       address: current.address || account.addresses[0]?.line || "",
-      doc: current.doc || account.profile.docNumber,
+      doc: current.doc || account.profile.docNumber, docType: account.profile.docType === "RUC" ? "RUC" : "DNI", reference: current.reference || account.addresses[0]?.ref || "",
     }));
   }, [account]);
 
@@ -61,18 +65,16 @@ function Checkout() {
   const total = sum.subtotal + serviceFee + shippingFee;
 
   const confirm = async () => {
-    const keys = ["business", "contact", "phone", "date", ...(service === "taxi_delivery" ? ["driver", "plate", "dphone", "arrival", "meeting"] : ["address"])];
-    const e = requireFields(f, keys);
-    if (f.dphone && !/^9\d{8}$/.test(f.dphone)) e.dphone = "Celular de 9 dígitos";
-    if (service === "taxi_delivery" && (f.arrival < "04:00" || f.arrival > "09:00")) e.arrival = "Entre 04:00 y 09:00 am";
-    if (service === "minivan_delivery" && !mv.ok) e.service = "El pedido supera 750 kg, supera el límite por pedido";
-    setErr(e);
-    if (Object.keys(e).length) { toast.error("Completa los campos obligatorios"); return; }
+    setAttempted(true);
+    if (!checkoutSchema.safeParse({ ...f, service }).success) return;
+    if (sum.lines.some((l) => !quantitySchema.safeParse(l.qty).success)) { toast.error("Corrige las cantidades: enteros de 1 a 50 por producto"); return; }
+    if (service === "minivan_delivery" && !mv.ok) { toast.error("El pedido supera el límite de 750 kg"); return; }
     const o: Order = {
       code: "", createdAt: new Date().toISOString(), business: f.business, contact: f.contact, phone: f.phone, service, status: "received",
       items: sum.lines.map((l) => ({ productId: l.productId, name: l.product.name, vendorId: l.product.vendorId, qty: l.qty, unitPrice: l.product.price, unit: l.product.unit, weightKg: l.product.weightKg, note: l.note })),
       subtotal: sum.subtotal, serviceFee, shippingFee, total, weightKg: sum.weightKg, packages: sum.packages,
       paymentPlan: f.plan, paymentMethod: f.method, paymentStatus: "pending", deliveryDate: f.date, slot: service === "taxi_delivery" ? `Taxi llega ${f.arrival}` : f.slot,
+      reference: service === "minivan_delivery" ? f.reference : undefined, docType: f.docType, docNumber: f.doc,
       address: service === "minivan_delivery" ? f.address : undefined, zone: service === "minivan_delivery" ? f.zone : undefined,
       taxi: service === "taxi_delivery" ? { driver: f.driver, plate: f.plate.toUpperCase(), phone: f.dphone, arrival: f.arrival, meeting: f.meeting } : undefined,
       history: [{ status: "received", at: new Date().toISOString() }],
@@ -101,11 +103,11 @@ function Checkout() {
 
         <Card className="grid gap-3 md:grid-cols-2">
           <h2 className="font-bold md:col-span-2">Datos del negocio</h2>
-          <div className="md:col-span-2">{profile?.business && <button className="text-sm text-primary" onClick={() => setF({ ...f, business: profile.business, contact: profile.owner, phone: profile.phone, address: account?.addresses[0]?.line ?? "", doc: profile.docNumber })}>Usar datos de mi cuenta ({profile.business})</button>}</div>
+          <div className="md:col-span-2">{profile?.business && <button className="text-sm text-primary" onClick={() => setF({ ...f, business: profile.business, contact: profile.owner, phone: profile.phone, address: account?.addresses[0]?.line ?? "", doc: profile.docNumber, docType: profile.docType === "RUC" ? "RUC" : "DNI", reference: account?.addresses[0]?.ref ?? "" })}>Usar datos de mi cuenta ({profile.business})</button>}</div>
           <Field label="Bodega / negocio" required error={err.business}><input className={inputCls} value={f.business} onChange={set("business")} /></Field>
           <Field label="Responsable" required error={err.contact}><input className={inputCls} value={f.contact} onChange={set("contact")} /></Field>
-          <Field label="Celular / WhatsApp" required error={err.phone}><input className={inputCls} inputMode="tel" value={f.phone} onChange={set("phone")} /></Field>
-          <Field label="Fecha de entrega" required error={err.date}><input type="date" className={inputCls} value={f.date} onChange={set("date")} /></Field>
+          <Field label="Celular / WhatsApp" required error={err.phone}><input className={inputCls} inputMode="numeric" maxLength={9} value={f.phone} onChange={set("phone")} /></Field>
+          <Field label="Fecha de entrega" required error={err.date}><input type="date" min={bounds.min} max={bounds.max} className={inputCls} value={f.date} onChange={set("date")} /></Field>
         </Card>
 
         {service === "taxi_delivery" ? (
@@ -113,8 +115,8 @@ function Checkout() {
             <h2 className="font-bold md:col-span-2">Datos de tu taxi de confianza</h2>
             {!!account?.taxis.length && <div className="flex flex-wrap gap-2 md:col-span-2">{account.taxis.map((x) => <button key={x.id} onClick={() => setF({ ...f, driver: x.driver, plate: x.plate, dphone: x.phone })} className="rounded-full border px-3 py-1.5 text-sm">🚕 {x.driver} · {x.plate}</button>)}</div>}
             <Field label="Nombre del chofer" required error={err.driver}><input className={inputCls} value={f.driver} onChange={set("driver")} /></Field>
-            <Field label="Placa del vehículo" required error={err.plate}><input className={inputCls} value={f.plate} onChange={set("plate")} placeholder="ABC-123" /></Field>
-            <Field label="Celular del conductor" required error={err.dphone}><input className={inputCls} value={f.dphone} onChange={set("dphone")} /></Field>
+            <Field label="Placa del vehículo" required error={err.plate}><input maxLength={7} className={inputCls} value={f.plate} onChange={set("plate")} placeholder="ABC-123" /></Field>
+            <Field label="Celular del conductor" required error={err.dphone}><input inputMode="numeric" maxLength={9} className={inputCls} value={f.dphone} onChange={set("dphone")} /></Field>
             <Field label="Hora de llegada a Unicachi (04:00–09:00)" required error={err.arrival}><input type="time" min="04:00" max="09:00" className={inputCls} value={f.arrival} onChange={set("arrival")} /></Field>
             <Field label="Punto de encuentro" required error={err.meeting}><select className={inputCls} value={f.meeting} onChange={set("meeting")}>{["Puerta 1", "Puerta 2", "Puerta 3", "Estacionamiento A", "Estacionamiento B"].map((x) => <option key={x}>{x}</option>)}</select></Field>
             <p className="rounded-xl bg-muted p-3 text-xs md:col-span-2">El costo de la carrera del taxi lo pagas directamente a tu conductor. Mercantista solo cobra por compra, control de calidad y carga en Unicachi.</p>
@@ -122,9 +124,10 @@ function Checkout() {
         ) : (
           <Card className="grid gap-3 md:grid-cols-2">
             <h2 className="font-bold md:col-span-2">Entrega tipo 2 · Hasta tu bodega o almacén</h2>
-            <Field label="Zona" required><select className={inputCls} value={f.zone} onChange={set("zone")}>{ZONES.map((z) => <option key={z}>{z}</option>)}</select></Field>
+            <Field label="Zona" error={err.zone} required><select className={inputCls} value={f.zone} onChange={set("zone")}>{ZONES.map((z) => <option key={z}>{z}</option>)}</select></Field>
             <Field label="Turno" required><select className={inputCls} value={f.slot} onChange={set("slot")}>{SLOTS.map((z) => <option key={z}>{z}</option>)}</select></Field>
-            <div className="md:col-span-2"><Field label="Dirección y referencia" required error={err.address}><input className={inputCls} value={f.address} onChange={set("address")} placeholder="Av. ..., frente a ..." /></Field></div>
+            <div className="md:col-span-2"><Field label="Dirección" required error={err.address}><input className={inputCls} value={f.address} onChange={set("address")} placeholder="Av. Los Álamos 123" /></Field></div>
+            <Field label="Referencia" required error={err.reference}><input className={inputCls} maxLength={120} value={f.reference} onChange={set("reference")} /></Field>
           </Card>
         )}
 
@@ -133,7 +136,7 @@ function Checkout() {
           <p className="rounded-xl bg-secondary p-3 text-sm md:col-span-2">Por ser mercado mayorista, validamos el precio exacto en Unicachi durante la madrugada y te avisamos cualquier diferencia antes de cobrar. <b>El pago se coordina por Yape, Plin, transferencia o contra entrega; no se procesan pagos en línea.</b></p>
           <Field label="Modalidad"><select className={inputCls} value={f.plan} onChange={set("plan")}>{PLANS.map((x) => <option key={x}>{x}</option>)}</select></Field>
           <Field label="Método preferido"><select className={inputCls} value={f.method} onChange={set("method")}>{METHODS.map((x) => <option key={x}>{x}</option>)}</select></Field>
-          <Field label="DNI o RUC"><input className={inputCls} value={f.doc} onChange={set("doc")} /></Field>
+          <Field label="Documento" error={err.docType}><select className={inputCls} value={f.docType} onChange={set("docType")}><option>DNI</option><option>RUC</option></select></Field><Field label="Número de documento" required error={err.doc}><input inputMode="numeric" maxLength={f.docType === "RUC" ? 11 : 8} className={inputCls} value={f.doc} onChange={set("doc")} /></Field>
           <Field label="Razón social (si factura)"><input className={inputCls} value={f.razon} onChange={set("razon")} /></Field>
         </Card>
       </div>
@@ -148,7 +151,7 @@ function Checkout() {
           
         </div>
         <div className="flex justify-between border-t pt-3 text-lg font-bold"><span>Total estimado</span><span className="tabular-nums">{soles(total)}</span></div>
-        <button onClick={confirm} disabled={saving} className="h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">{saving ? "Enviando pedido..." : "Confirmar y enviar pedido"}</button>
+        <Button onClick={confirm} disabled={saving || Object.keys(err).length > 0} className="h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">{saving ? "Enviando pedido..." : "Confirmar y enviar pedido"}</Button>
       </aside>
     </div>
   );

@@ -6,6 +6,8 @@ import { ZONES } from "@/lib/data";
 import { useAccount, useAccountActions, type AccountProfile } from "@/lib/account";
 import { useAuth } from "@/lib/auth";
 import { Card, Field, inputCls } from "@/components/Field";
+import { profileSchema, accountAddressSchema, taxiSchema, fieldErrors, formatPlate, digits } from "@/lib/validation";
+import { Button } from "@/components/ui/button";
 import { Welcome } from "@/components/Welcome";
 
 export const Route = createFileRoute("/_authenticated/cuenta")({
@@ -31,11 +33,16 @@ function Cuenta() {
   const [taxi, setTaxi] = useState({ driver: "", plate: "", phone: "" });
   const [addr, setAddr] = useState({ zone: ZONES[0] as string, line: "", ref: "" });
   const [saving, setSaving] = useState(false);
+  const [checked, setChecked] = useState({ profile: false, address: false, taxi: false });
+  const pe = checked.profile ? fieldErrors(profileSchema, profile) : {};
+  const ae = checked.address ? fieldErrors(accountAddressSchema, addr) : {};
+  const te = checked.taxi ? fieldErrors(taxiSchema, taxi) : {};
 
   useEffect(() => { if (account.data) setProfile(account.data.profile); }, [account.data]);
 
   const saveProfile = async () => {
-    if (!profile.business.trim() || !profile.owner.trim()) { toast.error("Completa el nombre de la bodega y del dueño"); return; }
+    setChecked({ ...checked, profile: true });
+    if (!profileSchema.safeParse(profile).success) return;
     setSaving(true);
     try { await actions.saveProfile(profile); toast.success("Datos guardados"); }
     catch { toast.error("No se pudieron guardar tus datos"); }
@@ -52,32 +59,32 @@ function Cuenta() {
       {account.isLoading ? <Card>Cargando tu cuenta...</Card> : account.isError ? <Card className="text-destructive">No pudimos cargar tus datos. Inténtalo otra vez.</Card> : <>
         <Card className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
-            <Field label="Bodega / negocio" required><input className={inputCls} value={profile.business} onChange={(e) => setProfile({ ...profile, business: e.target.value })} /></Field>
-            <Field label="Dueño / responsable" required><input className={inputCls} value={profile.owner} onChange={(e) => setProfile({ ...profile, owner: e.target.value })} /></Field>
-            <Field label="Celular de acceso"><input className={inputCls} value={profile.phone} readOnly aria-readonly="true" /></Field>
+            <Field error={pe.business} label="Bodega / negocio" required><input className={inputCls} value={profile.business} onChange={(e) => setProfile({ ...profile, business: e.target.value })} /></Field>
+            <Field error={pe.owner} label="Dueño / responsable" required><input className={inputCls} value={profile.owner} onChange={(e) => setProfile({ ...profile, owner: e.target.value })} /></Field>
+            <Field error={pe.phone} label="Celular de acceso"><input className={inputCls} value={profile.phone} readOnly aria-readonly="true" /></Field>
             <div className="grid grid-cols-3 gap-2">
-              <Field label="Documento"><select className={inputCls} value={profile.docType} onChange={(e) => setProfile({ ...profile, docType: e.target.value })}><option>DNI</option><option>RUC</option><option>CE</option></select></Field>
-              <div className="col-span-2"><Field label="Número"><input className={inputCls} maxLength={20} value={profile.docNumber} onChange={(e) => setProfile({ ...profile, docNumber: e.target.value })} /></Field></div>
+              <Field error={pe.docType} label="Documento"><select className={inputCls} value={profile.docType} onChange={(e) => setProfile({ ...profile, docType: e.target.value })}><option>DNI</option><option>RUC</option></select></Field>
+              <div className="col-span-2"><Field error={pe.docNumber} label="Número"><input className={inputCls} inputMode="numeric" maxLength={profile.docType === "RUC" ? 11 : 8} value={profile.docNumber} onChange={(e) => setProfile({ ...profile, docNumber: digits(e.target.value) })} /></Field></div>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">Usarás este celular y tu contraseña para iniciar sesión.</p>
-          <button onClick={saveProfile} disabled={saving} className="h-11 rounded-xl bg-primary px-5 font-semibold text-primary-foreground disabled:opacity-60">{saving ? "Guardando..." : "Guardar datos"}</button>
+          <Button onClick={saveProfile} disabled={saving || Object.keys(pe).length > 0} className="h-11 rounded-xl bg-primary px-5 font-semibold text-primary-foreground disabled:opacity-60">{saving ? "Guardando..." : "Guardar datos"}</Button>
         </Card>
         <div className="grid gap-5 md:grid-cols-2">
           <Card className="space-y-3">
             <h2 className="font-bold">Direcciones de entrega</h2>
             {account.data?.addresses.map((a) => <div key={a.id} className="flex justify-between gap-3 rounded-xl bg-muted p-3 text-sm"><div><p className="font-semibold">{a.line}</p><p className="text-muted-foreground">{a.zone}{a.ref && ` · ${a.ref}`}</p></div><button aria-label={`Eliminar dirección ${a.line}`} onClick={() => void actions.deleteAddress(a.id).catch(() => toast.error("No se pudo eliminar"))}><Trash2 className="h-4 w-4" /></button></div>)}
-            <select aria-label="Zona de la nueva dirección" className={inputCls} value={addr.zone} onChange={(e) => setAddr({ ...addr, zone: e.target.value })}>{ZONES.map((z) => <option key={z}>{z}</option>)}</select>
-            <input className={inputCls} aria-label="Nueva dirección" placeholder="Dirección" maxLength={500} value={addr.line} onChange={(e) => setAddr({ ...addr, line: e.target.value })} />
-            <input className={inputCls} aria-label="Referencia de la nueva dirección" placeholder="Referencia (portón, color, esquina)" maxLength={500} value={addr.ref} onChange={(e) => setAddr({ ...addr, ref: e.target.value })} />
-            <button className="h-11 w-full rounded-xl border font-semibold" onClick={() => { if (!addr.line.trim()) { toast.error("Ingresa la dirección"); return; } void actions.addAddress({ ...addr, line: addr.line.trim(), ref: addr.ref.trim() }).then(() => { setAddr({ ...addr, line: "", ref: "" }); toast.success("Dirección guardada"); }).catch(() => toast.error("No se pudo guardar la dirección")); }}>Guardar dirección</button>
+            <Field label="Zona" error={ae.zone} required><select aria-label="Zona de la nueva dirección" className={inputCls} value={addr.zone} onChange={(e) => setAddr({ ...addr, zone: e.target.value })}>{ZONES.map((z) => <option key={z}>{z}</option>)}</select></Field>
+            <Field label="Dirección" error={ae.line} required><input className={inputCls} aria-label="Nueva dirección" placeholder="Dirección" maxLength={120} value={addr.line} onChange={(e) => setAddr({ ...addr, line: e.target.value })} /></Field>
+            <Field label="Referencia" error={ae.ref} required><input className={inputCls} aria-label="Referencia de la nueva dirección" placeholder="Referencia (portón, color, esquina)" maxLength={120} value={addr.ref} onChange={(e) => setAddr({ ...addr, ref: e.target.value })} /></Field>
+            <Button variant="outline" disabled={Object.keys(ae).length > 0} className="h-11 w-full" onClick={() => { setChecked({ ...checked, address: true }); if (!accountAddressSchema.safeParse(addr).success) return; void actions.addAddress(addr).then(() => { setAddr({ ...addr, line: "", ref: "" }); setChecked({ ...checked, address: false }); toast.success("Dirección guardada"); }).catch(() => toast.error("No se pudo guardar la dirección")); }}>Guardar dirección</Button>
           </Card>
           <Card className="space-y-3">
             <h2 className="font-bold">Mis taxis de confianza</h2>
             {account.data?.taxis.map((t) => <div key={t.id} className="flex justify-between gap-3 rounded-xl bg-muted p-3 text-sm"><span>{t.driver} · {t.plate}{t.phone && ` · ${t.phone}`}</span><button aria-label={`Eliminar taxi ${t.plate}`} onClick={() => void actions.deleteTaxi(t.id).catch(() => toast.error("No se pudo eliminar"))}><Trash2 className="h-4 w-4" /></button></div>)}
-            <input className={inputCls} aria-label="Nombre del chofer" placeholder="Nombre del chofer" maxLength={200} value={taxi.driver} onChange={(e) => setTaxi({ ...taxi, driver: e.target.value })} />
-            <div className="grid grid-cols-2 gap-2"><input className={inputCls} aria-label="Placa del taxi" placeholder="Placa" maxLength={20} value={taxi.plate} onChange={(e) => setTaxi({ ...taxi, plate: e.target.value.toUpperCase() })} /><input className={inputCls} aria-label="Celular del chofer" placeholder="Celular" inputMode="numeric" maxLength={9} value={taxi.phone} onChange={(e) => setTaxi({ ...taxi, phone: e.target.value.replace(/\D/g, "") })} /></div>
-            <button className="h-11 w-full rounded-xl border font-semibold" onClick={() => { if (!taxi.driver.trim() || !taxi.plate.trim()) { toast.error("Completa chofer y placa"); return; } if (taxi.phone && !/^9\d{8}$/.test(taxi.phone)) { toast.error("Celular del chofer no válido"); return; } void actions.addTaxi({ ...taxi, driver: taxi.driver.trim(), plate: taxi.plate.trim() }).then(() => { setTaxi({ driver: "", plate: "", phone: "" }); toast.success("Taxi guardado"); }).catch(() => toast.error("No se pudo guardar el taxi")); }}>Guardar taxi</button>
+            <Field label="Nombre del chofer" error={te.driver} required><input className={inputCls} aria-label="Nombre del chofer" placeholder="Nombre del chofer" maxLength={200} value={taxi.driver} onChange={(e) => setTaxi({ ...taxi, driver: e.target.value })} /></Field>
+            <div className="grid grid-cols-2 gap-2"><Field label="Placa del taxi" error={te.plate} required><input className={inputCls} aria-label="Placa del taxi" placeholder="Placa" maxLength={7} value={taxi.plate} onChange={(e) => setTaxi({ ...taxi, plate: formatPlate(e.target.value) })} /></Field><Field label="Celular del chofer" error={te.phone} required><input className={inputCls} aria-label="Celular del chofer" placeholder="Celular" inputMode="numeric" maxLength={9} value={taxi.phone} onChange={(e) => setTaxi({ ...taxi, phone: e.target.value.replace(/\D/g, "") })} /></Field></div>
+            <Button variant="outline" disabled={Object.keys(te).length > 0} className="h-11 w-full" onClick={() => { setChecked({ ...checked, taxi: true }); if (!taxiSchema.safeParse(taxi).success) return; void actions.addTaxi(taxi).then(() => { setTaxi({ driver: "", plate: "", phone: "" }); setChecked({ ...checked, taxi: false }); toast.success("Taxi guardado"); }).catch(() => toast.error("No se pudo guardar el taxi")); }}>Guardar taxi</Button>
           </Card>
         </div>
       </>}

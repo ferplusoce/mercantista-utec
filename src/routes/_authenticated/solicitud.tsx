@@ -9,7 +9,8 @@ import { submitRequest } from "@/lib/requests";
 import { useAccount } from "@/lib/account";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Card, Field, inputCls, requireFields } from "@/components/Field";
+import { requestSchema, fieldErrors, attachmentSchema, digits, deliveryBounds } from "@/lib/validation";
+import { Card, Field, inputCls } from "@/components/Field";
 
 export const Route = createFileRoute("/_authenticated/solicitud")({
   validateSearch: (s: Record<string, unknown>) => ({ vendor: s.vendor as string | undefined }),
@@ -36,28 +37,31 @@ function Solicitud() {
   const [rows, setRows] = useState<Row[]>([empty(vendor)]);
   const [file, setFile] = useState<{ name: string; url?: string; raw: File } | null>(null);
   const [sending, setSending] = useState(false);
-  const [f, setF] = useState({ business: "", contact: "", phone: "", address: "", zone: ZONES[0] as string, date: "" });
-  const [err, setErr] = useState<Record<string, string>>({});
+  const [f, setF] = useState({ business: "", contact: "", phone: "", address: "", reference: "", zone: ZONES[0] as string, date: "" });
+  const [attempted, setAttempted] = useState(false);
+  const [fileError, setFileError] = useState("");
+  const payload = { ...f, delivery_date: f.date, items: mode === "lista" ? rows : [] };
+  const err = attempted ? fieldErrors(requestSchema, payload) : {};
+  const bounds = deliveryBounds();
   const [done, setDone] = useState<string | null>(null);
   const upd = (i: number, k: keyof Row, v: string) => setRows((r) => r.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
 
   useEffect(() => {
     if (!account) return;
-    setF((current) => ({ ...current, business: current.business || account.profile.business, contact: current.contact || account.profile.owner, phone: current.phone || account.profile.phone, address: current.address || account.addresses[0]?.line || "" }));
+    setF((current) => ({ ...current, business: current.business || account.profile.business, contact: current.contact || account.profile.owner, phone: current.phone || account.profile.phone, address: current.address || account.addresses[0]?.line || "", reference: current.reference || account.addresses[0]?.ref || "" }));
   }, [account]);
 
   const submit = async () => {
     if (sending) return;
     if (!user) { toast.error("Debes iniciar sesión"); return; }
-    const e = requireFields(f, ["business", "contact", "phone", "address", "date"]);
-    const items = rows.filter((r) => r.name.trim());
-    if (mode === "lista" && items.length === 0) e.items = "Agrega al menos un producto";
-    if (mode === "foto" && !file) e.items = "Adjunta la foto o archivo de tu lista";
-    setErr(e);
-    if (Object.keys(e).length) { toast.error("Revisa los campos marcados"); return; }
+    setAttempted(true);
+    const items = rows;
+    if (!requestSchema.safeParse(payload).success || fileError) return;
+    if (mode === "lista" && rows.length === 0) { toast.error("Agrega al menos un producto"); return; }
+    if (mode === "foto" && !file) { setFileError("Adjunta tu lista"); return; }
     setSending(true);
     try {
-      const code = await submitRequest({ business: f.business, contact: f.contact, phone: f.phone, address: f.address, zone: f.zone, delivery_date: f.date, items: mode === "lista" ? items : [] }, mode === "foto" ? file?.raw : undefined, user.id);
+      const code = await submitRequest({ business: f.business, contact: f.contact, phone: f.phone, address: f.address, reference: f.reference, zone: f.zone, delivery_date: f.date, items: mode === "lista" ? items : [] }, mode === "foto" ? file?.raw : undefined, user.id);
       toast.success("Solicitud enviada"); setDone(code);
     } catch (error) { toast.error(error instanceof Error && error.name !== "ZodError" ? error.message : "Revisa los datos: celular de 9 dígitos y cantidades mayores a cero"); }
     finally { setSending(false); }
@@ -84,13 +88,13 @@ function Solicitud() {
         <Card className="space-y-3">
           {rows.map((r, i) => (
             <div key={i} className="grid gap-2 rounded-xl border p-3 md:grid-cols-12">
-              <input className={inputCls + " md:col-span-3"} placeholder="Producto (ej. Papa Canchán)" value={r.name} onChange={(e) => upd(i, "name", e.target.value)} />
-              <input className={inputCls + " md:col-span-1"} type="number" min={1} value={r.qty} onChange={(e) => upd(i, "qty", e.target.value)} />
-              <select className={inputCls + " md:col-span-2"} value={r.unit} onChange={(e) => upd(i, "unit", e.target.value)}>{["Saco", "Jaba", "Caja", "Malla", "Atado", "Kilos"].map((u) => <option key={u}>{u}</option>)}</select>
-              <select className={inputCls + " md:col-span-2"} value={r.quality} onChange={(e) => upd(i, "quality", e.target.value)}>{["Primera", "Comercial", "Económica"].map((u) => <option key={u}>{u}</option>)}</select>
+              <div className="md:col-span-3"><Field label="Producto" error={err[`items.${i}.name`]}><input className={inputCls} placeholder="Producto (ej. Papa Canchán)" value={r.name} onChange={(e) => upd(i, "name", e.target.value)} /></Field></div>
+              <div className="md:col-span-1"><Field label="Cantidad" error={err[`items.${i}.qty`]}><input className={inputCls} type="number" inputMode="numeric" min={1} max={50} step={1} value={r.qty} onChange={(e) => upd(i, "qty", e.target.value)} /></Field></div>
+              <div className="md:col-span-2"><Field label="Unidad" error={err[`items.${i}.unit`]}><select className={inputCls} value={r.unit} onChange={(e) => upd(i, "unit", e.target.value)}>{["Saco", "Jaba", "Caja", "Malla", "Atado", "Kilos"].map((u) => <option key={u}>{u}</option>)}</select></Field></div>
+              <div className="md:col-span-2"><Field label="Calidad" error={err[`items.${i}.quality`]}><select className={inputCls} value={r.quality} onChange={(e) => upd(i, "quality", e.target.value)}>{["Primera", "Comercial", "Económica"].map((u) => <option key={u}>{u}</option>)}</select></Field></div>
               <select className={inputCls + " md:col-span-3"} value={r.vendor} onChange={(e) => upd(i, "vendor", e.target.value)}><option value="">Cualquier puesto</option>{vendors.map((v) => <option key={v.id} value={v.id}>{v.stall} · {v.name}</option>)}</select>
               <button onClick={() => setRows((x) => x.filter((_, j) => j !== i))} className="grid h-11 place-items-center rounded-xl border md:col-span-1" aria-label="Quitar"><Trash2 className="h-4 w-4" /></button>
-              <input className={inputCls + " md:col-span-12"} placeholder="Notas (ej. papas medianas para freír, tomates pintones)" value={r.notes} onChange={(e) => upd(i, "notes", e.target.value)} />
+              <div className="md:col-span-12"><Field label="Notas" error={err[`items.${i}.notes`]}><input className={inputCls} placeholder="Notas (ej. papas medianas para freír, tomates pintones)" value={r.notes} onChange={(e) => upd(i, "notes", e.target.value)} /></Field></div>
             </div>
           ))}
           <button onClick={() => setRows((x) => [...x, empty()])} className="inline-flex h-11 items-center rounded-xl border px-4 text-sm font-semibold"><Plus className="mr-1 h-4 w-4" />Agregar fila</button>
@@ -101,7 +105,7 @@ function Solicitud() {
             <ImageUp className="h-10 w-10 text-primary" />
             <span className="font-semibold">Toca para subir la foto de tu lista</span>
             <span className="text-xs text-muted-foreground">Imagen, PDF o archivo de texto</span>
-            <input type="file" accept="image/*,.pdf,.txt,.doc,.docx" className="hidden" onChange={(e) => { const x = e.target.files?.[0]; if (x) { if (file?.url) URL.revokeObjectURL(file.url); setFile({ raw: x, name: x.name, url: x.type.startsWith("image/") ? URL.createObjectURL(x) : undefined }); } }} />
+            <input type="file" accept="image/jpeg,image/png,image/webp,.pdf,.txt,.doc,.docx" className="hidden" onChange={(e) => { const x = e.target.files?.[0]; if (x) { const result = attachmentSchema.safeParse(x); if (!result.success) { setFileError(result.error.issues[0]?.message ?? "Archivo inválido"); setFile(null); return; } setFileError(""); if (file?.url) URL.revokeObjectURL(file.url); setFile({ raw: x, name: x.name, url: x.type.startsWith("image/") ? URL.createObjectURL(x) : undefined }); } }} />
           </label>
           {file && <div className="mt-3 rounded-xl bg-muted p-3 text-sm">{file.url && <img src={file.url} alt="Vista previa de la lista" className="mb-2 max-h-64 rounded-lg" />}📎 {file.name}</div>}
         </Card>
@@ -110,12 +114,13 @@ function Solicitud() {
       <Card className="grid gap-3 md:grid-cols-2">
         <Field label="Nombre del negocio / bodega" required error={err.business}><input className={inputCls} value={f.business} onChange={(e) => setF({ ...f, business: e.target.value })} /></Field>
         <Field label="Nombre del responsable" required error={err.contact}><input className={inputCls} value={f.contact} onChange={(e) => setF({ ...f, contact: e.target.value })} /></Field>
-        <Field label="Teléfono / WhatsApp" required error={err.phone}><input className={inputCls} inputMode="tel" placeholder="9XXXXXXXX" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></Field>
-        <Field label="Zona"><select className={inputCls} value={f.zone} onChange={(e) => setF({ ...f, zone: e.target.value })}>{ZONES.map((z) => <option key={z}>{z}</option>)}</select></Field>
+        <Field label="Teléfono / WhatsApp" required error={err.phone}><input className={inputCls} inputMode="numeric" maxLength={9} placeholder="9XXXXXXXX" value={f.phone} onChange={(e) => setF({ ...f, phone: digits(e.target.value) })} /></Field>
+        <Field label="Zona" error={err.zone}><select className={inputCls} value={f.zone} onChange={(e) => setF({ ...f, zone: e.target.value })}>{ZONES.map((z) => <option key={z}>{z}</option>)}</select></Field>
         <Field label="Dirección del negocio" required error={err.address}><input className={inputCls} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} /></Field>
-        <Field label="Fecha y hora deseada de recepción" required error={err.date}><input type="datetime-local" className={inputCls} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
+        <Field label="Referencia" required error={err.reference}><input className={inputCls} maxLength={120} value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} /></Field>
+         <Field label="Fecha y hora deseada de recepción" required error={err.delivery_date}><input type="datetime-local" min={`${bounds.min}T00:00`} max={`${bounds.max}T23:59`} className={inputCls} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
       </Card>
-      <Button onClick={submit} disabled={sending} className="h-14 w-full whitespace-normal rounded-xl text-lg font-semibold">{sending ? "Enviando..." : "Enviar solicitud de cotización"}</Button>
+      <Button onClick={submit} disabled={sending || Object.keys(err).length > 0 || !!fileError} className="h-14 w-full whitespace-normal rounded-xl text-lg font-semibold">{sending ? "Enviando..." : "Enviar solicitud de cotización"}</Button>
     </div>
   );
 }
