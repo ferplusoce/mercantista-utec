@@ -1,9 +1,9 @@
 # Team feedback
-- [ ] Prepare Unicachi drafts and enforce customer visibility for positive prices.
-- [ ] Add product photo types and labels.
-- [ ] Add product/category batch photo upload with previews and manual assignments; verify authenticated saves.
+- [x] Prepare Unicachi drafts and enforce customer visibility for positive prices (anonymous reads: 20 products, no zero-price rows).
+- [x] Add product photo types and labels.
+- [x] Add product/category batch photo upload with previews and manual assignments; verify authenticated saves and 360px preview (67 tests passed; temporary photos removed).
 - [x] Diagnose signup logs (weak/leaked password, HTTP 422), replace generic errors, and verify real signup, immediate session, login, wrong password and duplicate account (19 focused tests passed).
-- [ ] Verify intended administrator signup roles safely (blocked: accounts absent and phone ownership unverified; never auto-grant from an unverified number).
+- [x] Activate Fernando's registered administrator account through the user's trusted request; never auto-grant from an unverified number.
 - [x] Restrict install button to eligible Android and iPhone Safari, never installed or desktop (browser event simulation and Safari instructions verified).
 - [x] Verify customer screens at 360px and ensure buttons are at least 44px tall; correct cart overflow and shared dialog controls.
 - [ ] Verify admin screens at 360px with a real admin session (blocked: no current admin account; old operator was retired).
@@ -13,7 +13,8 @@
 - [x] Replace sample summaries/cost charts with real Cloud metrics and empty states.
 - [x] Verify admin/customer permissions and management flows; run focused tests (46 passed; real creation, photos, category editing, order status, summary and customer denial).
 - [x] Retire the previous operator account and fixed-key secret.
-- [ ] Assign Fernando and Moisés admin roles after their accounts exist and their ownership is verified (waiting for registration).
+- [x] Assign Fernando the admin role after his explicit account confirmation.
+- [ ] Assign Moisés admin after registration and trusted account confirmation (waiting for confirmation).
 - [x] Apply shared Zod rules and Spanish field errors across customer and admin forms.
 - [x] Enforce matching Cloud validation and photo limits without altering historical data.
 - [x] Test rule boundaries and verify customer/admin form flows (42 tests; registration, profile, address, taxi, purchase, request, photo formats/size and admin price rejection).
