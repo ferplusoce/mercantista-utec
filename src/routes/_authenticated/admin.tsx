@@ -42,7 +42,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminError({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
-  if (error.message !== "No tienes permisos de administrador") return <ConnectionError retry={async () => { await router.invalidate(); reset(); }} />;
+  if (!(error instanceof Error) || error.message !== "No tienes permisos de administrador") return <ConnectionError retry={async () => { await router.invalidate(); reset(); }} />;
   return <div className="space-y-4 py-10 text-center"><h1 className="text-2xl font-bold">Acceso restringido</h1><p>Esta cuenta no tiene permisos de administrador.</p><Button asChild variant="outline"><Link to="/cuenta">Ir a mi cuenta</Link></Button></div>;
 }
 
