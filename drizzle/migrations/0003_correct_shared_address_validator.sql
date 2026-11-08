@@ -1,0 +1,1 @@
+DO $$ DECLARE definition text; BEGIN SELECT pg_get_functiondef('public.validate_form_record()'::regprocedure) INTO definition; definition := replace(definition, 'new.service=''taxi_delivery''', 'n->>''service''=''taxi_delivery'''); EXECUTE definition; END $$;
