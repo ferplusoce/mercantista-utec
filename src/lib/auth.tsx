@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type Context, type ReactNode } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "@supabase/supabase-js";
@@ -9,7 +9,7 @@ export { normalizePhone, isValidPhone, customerEmail, safeReturnPath } from "./c
 type AuthValue = { user: User | null; loading: boolean; signOut: () => Promise<void> };
 // Preserve context identity during live updates: mounted providers and refreshed
 // consumers must reference the same context, without persisting session values.
-const AuthContext = import.meta.hot?.data.authContext ?? createContext<AuthValue | null>(null);
+const AuthContext: Context<AuthValue | null> = import.meta.hot?.data.authContext ?? createContext<AuthValue | null>(null);
 if (import.meta.hot) import.meta.hot.data.authContext = AuthContext;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
