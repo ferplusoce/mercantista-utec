@@ -568,6 +568,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_dashboard: { Args: never; Returns: Json }
       create_order: { Args: { p: Json }; Returns: string }
       get_order_by_code: {
         Args: { _code: string }
