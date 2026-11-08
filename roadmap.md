@@ -4,8 +4,8 @@
 - [x] Add first-visit welcome and home steps.
 - [x] Store requests and attachments in Cloud; add admin requests.
 - [x] Verify written/image submissions, admin attachment read and status persistence, mobile welcome/options, and 21 existing/new tests.
-- [ ] Add phone/password accounts with immediate activation and session-aware sign-in/sign-out.
-- [ ] Move account profile, addresses and taxis to private Cloud records.
-- [ ] Require sign-in for orders and custom requests; assign each record to its owner.
-- [ ] Add Mis pedidos with detail, photo approval and repeat order.
-- [ ] Restrict customer and admin data access, then test the complete account/order flow.
+- [x] Add phone/password accounts with immediate activation and session-aware sign-in/sign-out.
+- [x] Move account profile, addresses and taxis to private Cloud records.
+- [x] Require sign-in for orders and custom requests; assign each record to its owner.
+- [x] Add Mis pedidos with detail, photo approval and repeat order.
+- [x] Restrict customer and admin data access, then test the complete account/order flow.
