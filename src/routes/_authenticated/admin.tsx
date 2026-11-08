@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
-import { priceSchema, phoneSchema, optionalPhoneSchema, personSchema, businessSchema, photoSchema, digits } from "@/lib/validation";
+import { priceSchema, phoneSchema, optionalPhoneSchema, personSchema, businessSchema, digits } from "@/lib/validation";
 import { ValidatedInput } from "@/components/ValidatedInput";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -10,10 +10,9 @@ import { AdminCategories, AdminImageUpload as ImgUpload, ProductEditor, VendorEd
 import { Button } from "@/components/ui/button";
 import { Pause, Play, Plus, Trash2, Pencil, MessageCircle } from "lucide-react";
 import { ZONES, soles, type Vendor, type Availability, type Product } from "@/lib/data";
-import { bulkPrice, deleteProduct, patchProduct, patchSettings, patchVendor, uploadImage, useCatalog } from "@/lib/catalog";
-import { Photo } from "@/components/ProductCard";
+import { bulkPrice, deleteProduct, patchProduct, patchSettings, patchVendor, useCatalog } from "@/lib/catalog";
 import { STATUS_FLOW, STATUS_LABEL, type Order, type OrderStatus } from "@/lib/store";
-import { useAdmin, useAllOrders, useOrderMutations } from "@/lib/orders";
+import { useAllOrders, useOrderMutations } from "@/lib/orders";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, Field, inputCls } from "@/components/Field";
@@ -95,7 +94,7 @@ function Pedidos() {
           <thead className="text-left text-muted-foreground"><tr><th className="p-2">Código</th><th className="p-2">Cliente</th><th className="p-2">Entrega</th><th className="p-2">Total</th><th className="p-2">Estado</th></tr></thead>
           <tbody>{list.map((o) => (
             <tr key={o.code} className="border-t">
-              <td className="p-2"><Button className="font-semibold text-primary" onClick={() => setOpen(o)}>{o.code}</Button></td>
+              <td className="p-2"><Button variant="link" className="h-auto p-0 font-semibold" onClick={() => setOpen(o)}>{o.code}</Button></td>
               <td className="p-2"><p className="font-semibold">{o.business}</p><p>{o.contact}</p><a className="inline-flex items-center gap-1 text-primary" href={customerWhatsapp(o.phone, o.code)} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4" />{o.phone}</a></td><td className="p-2">{o.service === "taxi_delivery" ? "Entrega tipo 1 · Compra y subida a tu taxi" : "Entrega tipo 2 · Hasta tu bodega o almacén"}</td><td className="p-2 tabular-nums">{soles(o.total)}</td>
               <td className="p-2"><select className="h-9 rounded-lg border bg-card px-2" value={o.status} onChange={(e) => { const ns = e.target.value as OrderStatus; m.setStatus(o, ns).then(() => toast.success(`${o.code}: ${STATUS_LABEL[ns]}`), () => toast.error("No se pudo cambiar el estado")); }}>{[...STATUS_FLOW, "cancelled" as const].map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</select></td>
             </tr>

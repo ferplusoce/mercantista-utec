@@ -1,9 +1,9 @@
 # Team feedback
-- [ ] Replace fixed-key admin access with phone/password accounts and admin-only navigation.
-- [ ] Complete orders, product and vendor management; add category editing and retain tariffs, requests and Experiment 2.
-- [ ] Replace sample summaries/cost charts with real Cloud metrics and empty states.
-- [ ] Verify admin/customer permissions and management flows; run focused tests.
-- [ ] Retire the previous operator account and fixed-key secret.
+- [x] Replace fixed-key admin access with phone/password accounts and admin-only navigation.
+- [x] Complete orders, product and vendor management; add category editing and retain tariffs, requests and Experiment 2.
+- [x] Replace sample summaries/cost charts with real Cloud metrics and empty states.
+- [x] Verify admin/customer permissions and management flows; run focused tests (46 passed; real creation, photos, category editing, order status, summary and customer denial).
+- [x] Retire the previous operator account and fixed-key secret.
 - [ ] Assign Fernando and Moisés admin roles after their accounts exist and their ownership is verified (waiting for registration).
 - [x] Apply shared Zod rules and Spanish field errors across customer and admin forms.
 - [x] Enforce matching Cloud validation and photo limits without altering historical data.
