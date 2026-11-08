@@ -3,6 +3,8 @@
 - [ ] Complete orders, product and vendor management; add category editing and retain tariffs, requests and Experiment 2.
 - [ ] Replace sample summaries/cost charts with real Cloud metrics and empty states.
 - [ ] Verify admin/customer permissions and management flows; run focused tests.
+- [ ] Retire the previous operator account and fixed-key secret.
+- [ ] Assign Fernando and Moisés admin roles after their accounts exist and their ownership is verified (waiting for registration).
 - [x] Apply shared Zod rules and Spanish field errors across customer and admin forms.
 - [x] Enforce matching Cloud validation and photo limits without altering historical data.
 - [x] Test rule boundaries and verify customer/admin form flows (42 tests; registration, profile, address, taxi, purchase, request, photo formats/size and admin price rejection).

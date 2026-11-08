@@ -16,4 +16,6 @@
 - Reuse HowItWorks in home and the first-visit welcome; only the welcome-seen flag belongs in browser storage.
 - Catalog (categories, vendors, products) and settings (tariffs, support WhatsApp) live in Cloud and are read through `src/lib/catalog.ts`; localStorage holds only cart/device data, so admin edits reach every customer.
 - Customer profiles, addresses, taxis, orders and requests live in Cloud with owner/admin access; one root AuthProvider owns session state and protected pages sit under `_authenticated`.
+- Admin pages live under the authenticated layout with a separate role guard; privileged reports re-check admin inside the database RPC, and navigation uses the same server-backed role lookup.
+- Admin dashboard reporting aggregates persisted orders in Lima time; distinguish paid income from order sales and exclude canceled orders.
 - Product/category photos live in the private `product-images` bucket (public buckets are blocked by workspace policy); `image_url` stores the storage path and the app resolves signed URLs; uploads are shrunk client-side to ≤640px WebP for low-end phones.
