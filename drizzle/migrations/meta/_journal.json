@@ -64,6 +64,13 @@
       "when": 1794178318928,
       "tag": "0008_scope_public_settings_and_catalog_image_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794179889544,
+      "tag": "0009_unicachi_pending_products_and_photo_types",
+      "breakpoints": true
     }
   ]
 }

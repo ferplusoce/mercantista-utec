@@ -5,6 +5,7 @@ import { productFormSchema, vendorFormSchema, categoryFormSchema, type ProductFo
 import { z } from "zod";
 import { priceSchema, photoSchema, optionalPhoneSchema, personSchema } from "./validation";
 import type { Availability, CategoryInfo, Product, Vendor } from "./data";
+import { isCustomerProduct, photoTypeSchema, type PhotoType } from "./catalog-photos";
 
 /** Catálogo compartido leído desde Lovable Cloud (categorías, puestos, productos y ajustes). */
 export type Catalog = { loaded: boolean; error: boolean; categories: CategoryInfo[]; vendors: Vendor[]; products: Product[]; tariffs: Tariffs };
@@ -47,7 +48,7 @@ export async function refreshCatalog() {
     loaded: true, error: false,
     categories: (c.data ?? []).map((x) => ({ id: x.id, name: x.name, desc: x.description, imagePath: x.image_url, image: img(x.image_url), sortOrder: x.sort_order })),
     vendors: (v.data ?? []).map((x) => ({ id: x.id, name: x.name, stall: x.stall, pavilion: x.pavilion, contact: x.contact, phone: x.phone, specialty: x.specialty, schedule: x.schedule, verified: x.verified, active: x.active, rating: Number(x.rating) })),
-    products: (p.data ?? []).map((x) => ({ id: x.id, name: x.name, category: x.category_id ?? "", vendorId: x.vendor_id, unit: x.unit, format: x.format as Product["format"], weightKg: Number(x.weight_kg), price: Number(x.price), quality: x.quality as Product["quality"], availability: x.availability as Availability, desc: x.description, imagePath: x.image_url, image: img(x.image_url), active: x.active })),
+    products: (p.data ?? []).map((x) => ({ id: x.id, name: x.name, category: x.category_id ?? "", vendorId: x.vendor_id, unit: x.unit, format: x.format as Product["format"], weightKg: Number(x.weight_kg), price: Number(x.price), quality: x.quality as Product["quality"], availability: x.availability as Availability, desc: x.description, imagePath: x.image_url, image: img(x.image_url), active: x.active, photoType: photoTypeSchema.safeParse(x.photo_type).success ? x.photo_type as PhotoType : null })),
     tariffs: { ...DEFAULT_TARIFFS, ...t, whatsapp: s.data?.whatsapp || DEFAULT_TARIFFS.whatsapp },
   });
   } catch { set({ loaded: true, error: true }); }
@@ -81,11 +82,13 @@ const productRow = (p: Partial<Product>) => {
   if (p.desc !== undefined) r.description = p.desc;
   if (p.active !== undefined) r.active = p.active;
   if (p.imagePath !== undefined) r.image_url = p.imagePath;
+  if (p.photoType !== undefined) r.photo_type = p.photoType;
   return r;
 };
 
 export function patchProduct(id: string, p: Partial<Product>, onError: () => void) {
-  if (p.price !== undefined && !priceSchema.safeParse(p.price).success) { onError(); return; }
+  const current = cat.products.find((x) => x.id === id);
+  if (!current || !productFormSchema.safeParse({ ...current, ...p }).success) { onError(); return; }
   if (p.name !== undefined && !z.string().trim().min(1).max(200).safeParse(p.name).success) { onError(); return; }
   if (p.unit !== undefined && !z.string().trim().min(1).max(100).safeParse(p.unit).success) { onError(); return; }
   set({ products: cat.products.map((x) => (x.id === id ? { ...x, ...p } : x)) });
@@ -93,7 +96,7 @@ export function patchProduct(id: string, p: Partial<Product>, onError: () => voi
 }
 export async function saveProduct(input: ProductForm, id?: string) {
   const data = productFormSchema.parse(input);
-  const row = { name: data.name, category_id: data.category, vendor_id: data.vendorId, unit: data.unit, format: data.format, weight_kg: data.weightKg, price: data.price, quality: data.quality, availability: data.availability, description: data.desc, active: data.active };
+  const row = { name: data.name, category_id: data.category, vendor_id: data.vendorId, unit: data.unit, format: data.format, weight_kg: data.weightKg, price: data.price, quality: data.quality, availability: data.availability, description: data.desc, active: data.active, photo_type: data.photoType ?? null };
   const result = id ? await supabase.from("products").update(row).eq("id", id).select("id").single() : await supabase.from("products").insert(row).select("id").single();
   if (result.error || !result.data) throw result.error ?? new Error("No se pudo guardar");
   await refreshCatalog(); return result.data.id;
@@ -109,7 +112,7 @@ export async function deleteProduct(id: string) {
   return !error;
 }
 export async function bulkPrice(pct: number) {
-  const updates = cat.products.map((x) => ({ id: x.id, price: Math.round(x.price * (1 + pct / 100) * 2) / 2 }));
+  const updates = cat.products.filter((x) => x.price > 0).map((x) => ({ id: x.id, price: Math.round(x.price * (1 + pct / 100) * 2) / 2 }));
   if (!z.number().finite().min(-99).max(99).safeParse(pct).success || updates.some((u) => !priceSchema.safeParse(u.price).success)) return false;
   const res = await Promise.all(updates.map((u) => supabase.from("products").update({ price: u.price }).eq("id", u.id)));
   await refreshCatalog();
@@ -157,14 +160,17 @@ export async function shrinkImage(file: File, max = 640): Promise<Blob> {
   return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("No se pudo procesar la foto"))), "image/webp", 0.72));
 }
 
-export async function uploadImage(kind: "products" | "categories", id: string, file: File) {
+export async function uploadImage(kind: "products" | "categories", id: string, file: File, photoType?: PhotoType, refresh = true) {
+  if (photoType !== undefined) photoTypeSchema.parse(photoType);
   const blob = await shrinkImage(file);
-  const path = `${kind}/${id}-${Date.now()}.webp`;
+  const path = `${kind}/${id}-${crypto.randomUUID()}.webp`;
   const up = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: "image/webp", upsert: true });
   if (up.error) return false;
-  const { error } = await supabase.from(kind).update({ image_url: path }).eq("id", id);
-  if (!error) await refreshCatalog();
-  return !error;
+  const updates = kind === "products" && photoType ? { image_url: path, photo_type: photoType } : { image_url: path };
+  const { data, error } = await supabase.from(kind).update(updates).eq("id", id).select("id").single();
+  if (error || !data) { await supabase.storage.from(BUCKET).remove([path]); return false; }
+  if (refresh) await refreshCatalog();
+  return true;
 }
 
 /** "Lo más pedido": ids de los productos con más unidades en los últimos 30 días. */
@@ -176,8 +182,8 @@ export async function fetchTopProductIds(): Promise<string[]> {
 
 /** Elige los productos a mostrar: los más pedidos o, si no hay pedidos, los disponibles. */
 export function pickTopProducts(products: Product[], topIds: string[], n = 8): Product[] {
-  const byId = new Map(products.map((p) => [p.id, p]));
+  const byId = new Map(products.filter(isCustomerProduct).map((p) => [p.id, p]));
   const top = topIds.map((id) => byId.get(id)).filter((p): p is Product => !!p && p.active);
   if (top.length) return top.slice(0, n);
-  return products.filter((p) => p.active && p.availability === "disponible").slice(0, n);
+  return products.filter((p) => isCustomerProduct(p) && p.availability === "disponible").slice(0, n);
 }

@@ -6,6 +6,7 @@ import { soles, type Product } from "@/lib/data";
 import { addToCart } from "@/lib/store";
 import { useCatalog } from "@/lib/catalog";
 import { Button } from "@/components/ui/button";
+import { isCustomerProduct, photoTypeLabel } from "@/lib/catalog-photos";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 
@@ -21,7 +22,7 @@ export function Photo({ src, name, className }: { src: string | null; name: stri
 }
 
 export function ProductImage({ p, big }: { p: Product; big?: boolean }) {
-  return <Photo src={p.image} name={p.name} className={big ? "h-48" : "h-32"} />;
+  return <div className="space-y-1"><Photo src={p.image} name={p.name} className={big ? "h-48" : "h-32"} />{p.image && p.photoType && <span className="inline-block text-xs text-muted-foreground">{photoTypeLabel(p.photoType)}</span>}</div>;
 }
 
 export function QtyPicker({ value, onChange }: { value: number; onChange: (n: number) => void }) {
@@ -40,6 +41,7 @@ export function ProductCard({ p }: { p: Product }) {
   const { products, vendors, categories } = useCatalog();
   const v = vendors.find((x) => x.id === p.vendorId) ?? { id: p.vendorId, name: "Puesto", stall: "-", pavilion: "-", schedule: "" };
   const add = (n: number) => { addToCart(p.id, n); toast.success(`${n} × ${p.unit} de ${p.name} agregado al pedido`); };
+  if (!isCustomerProduct(p)) return null;
   return (
     <div className="flex flex-col rounded-2xl border bg-card p-3 shadow-sm">
       <button onClick={() => setOpen(true)} className="text-left">
@@ -75,7 +77,7 @@ export function ProductCard({ p }: { p: Product }) {
           <p className="rounded-xl bg-secondary p-3 text-xs">El precio mayorista varía cada madrugada según la oferta de Unicachi. Te confirmamos el monto exacto antes de comprar.</p>
           <div>
             <p className="mb-2 text-sm font-semibold">Más de este puesto</p>
-            <div className="flex flex-wrap gap-2">{products.filter((x) => x.vendorId === p.vendorId && x.id !== p.id).map((x) => <span key={x.id} className="rounded-full border px-2.5 py-1 text-xs">{x.name}</span>)}</div>
+            <div className="flex flex-wrap gap-2">{products.filter((x) => isCustomerProduct(x) && x.vendorId === p.vendorId && x.id !== p.id).map((x) => <span key={x.id} className="rounded-full border px-2.5 py-1 text-xs">{x.name}</span>)}</div>
           </div>
           <button disabled={p.availability === "agotado"} onClick={() => { add(qty); setOpen(false); }} className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-40">Agregar {qty} al pedido · {soles(qty * p.price)}</button>
         </DialogContent>

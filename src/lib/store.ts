@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import type { Product } from "./data";
 import { quantitySchema } from "./validation";
 import { toast } from "sonner";
+import { isCustomerProduct } from "./catalog-photos";
 
 export type CartItem = { productId: string; qty: number; note: string };
 export type OrderStatus = "received" | "verifying" | "purchasing" | "staging" | "on_the_way" | "delivered" | "cancelled";
@@ -70,7 +71,7 @@ export const STATUS_FLOW: OrderStatus[] = ["received", "verifying", "purchasing"
 
 /** Resume el carrito con productos actuales. */
 export function cartSummary(cart: CartItem[], products: Product[]) {
-  const lines = cart.flatMap((c) => { const product = products.find((p) => p.id === c.productId); return product && product.active ? [{ ...c, product }] : []; });
+  const lines = cart.flatMap((c) => { const product = products.find((p) => p.id === c.productId); return product && isCustomerProduct(product) ? [{ ...c, product }] : []; });
   const subtotal = lines.reduce((s, l) => s + l.qty * l.product.price, 0);
   const weightKg = lines.reduce((s, l) => s + l.qty * l.product.weightKg, 0);
   const packages = lines.reduce((s, l) => s + l.qty, 0);
