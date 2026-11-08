@@ -166,8 +166,10 @@ export async function uploadImage(kind: "products" | "categories", id: string, f
   const path = `${kind}/${id}-${crypto.randomUUID()}.webp`;
   const up = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: "image/webp", upsert: true });
   if (up.error) return false;
-  const updates = kind === "products" && photoType ? { image_url: path, photo_type: photoType } : { image_url: path };
-  const { data, error } = await supabase.from(kind).update(updates).eq("id", id).select("id").single();
+  const result = kind === "products"
+    ? await supabase.from("products").update(photoType ? { image_url: path, photo_type: photoType } : { image_url: path }).eq("id", id).select("id").single()
+    : await supabase.from("categories").update({ image_url: path }).eq("id", id).select("id").single();
+  const { data, error } = result;
   if (error || !data) { await supabase.storage.from(BUCKET).remove([path]); return false; }
   if (refresh) await refreshCatalog();
   return true;
