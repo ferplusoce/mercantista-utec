@@ -1,4 +1,7 @@
 # Team feedback
+- [ ] Prepare Unicachi drafts and enforce customer visibility for positive prices.
+- [ ] Add product photo types and labels.
+- [ ] Add product/category batch photo upload with previews and manual assignments; verify authenticated saves.
 - [x] Diagnose signup logs (weak/leaked password, HTTP 422), replace generic errors, and verify real signup, immediate session, login, wrong password and duplicate account (19 focused tests passed).
 - [ ] Verify intended administrator signup roles safely (blocked: accounts absent and phone ownership unverified; never auto-grant from an unverified number).
 - [x] Restrict install button to eligible Android and iPhone Safari, never installed or desktop (browser event simulation and Safari instructions verified).
