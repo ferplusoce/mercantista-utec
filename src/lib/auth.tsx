@@ -9,8 +9,8 @@ export { normalizePhone, isValidPhone, customerEmail, safeReturnPath } from "./c
 type AuthValue = { user: User | null; loading: boolean; signOut: () => Promise<void> };
 // Preserve context identity during live updates: mounted providers and refreshed
 // consumers must reference the same context, without persisting session values.
-const AuthContext: Context<AuthValue | null> = import.meta.hot?.data.authContext ?? createContext<AuthValue | null>(null);
-if (import.meta.hot) import.meta.hot.data.authContext = AuthContext;
+const AuthContext: Context<AuthValue | null> = import.meta.hot?.data?.authContext ?? createContext<AuthValue | null>(null);
+if (import.meta.hot?.data) import.meta.hot.data.authContext = AuthContext;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
