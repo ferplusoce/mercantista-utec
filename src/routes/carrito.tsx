@@ -4,6 +4,7 @@ import { soles } from "@/lib/data";
 import { cartSummary, updateCart, useStore } from "@/lib/store";
 import { useCatalog } from "@/lib/catalog";
 import { Photo, QtyPicker, PriceNote } from "@/components/ProductCard";
+import { quantitySchema } from "@/lib/validation";
 
 export const Route = createFileRoute("/carrito")({
   head: () => ({ meta: [
@@ -46,6 +47,7 @@ function Carrito() {
                 </div>
                 <div className="flex items-center gap-2">
                   <QtyPicker value={l.qty} onChange={(n) => updateCart(l.productId, { qty: n })} />
+                  {!quantitySchema.safeParse(l.qty).success && <p className="text-xs text-destructive">Cantidad entera de 1 a 50</p>}
                   <input value={l.note} onChange={(e) => updateCart(l.productId, { note: e.target.value })} placeholder="Nota: verificar que no vengan golpeados…" className="h-11 flex-1 rounded-xl border px-3 text-sm" />
                   <button onClick={() => updateCart(l.productId, { qty: 0 })} className="grid h-11 w-11 place-items-center rounded-xl border" aria-label="Quitar"><Trash2 className="h-4 w-4" /></button>
                 </div>

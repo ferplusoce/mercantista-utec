@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { inputCls } from "@/components/Field";
 import type { Database } from "@/integrations/supabase/types";
+import { z } from "zod";
 
 type Request = Database["public"]["Tables"]["requests"]["Row"];
 export function AdminRequests() {
@@ -27,7 +28,7 @@ export function AdminRequests() {
     return data.signedUrl;
   } });
   const update = async (r: Request, status: string) => {
-    if (!(status in REQUEST_STATUS)) return;
+    if (!z.enum(["pending", "quoted", "approved", "rejected"]).safeParse(status).success) return;
     setBusy(r.id);
     try {
       const { data, error } = await supabase.from("requests").update({ status }).eq("id", r.id).select("id").single();

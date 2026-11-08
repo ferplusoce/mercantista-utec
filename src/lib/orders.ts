@@ -8,7 +8,7 @@ type Row = {
   code: string; created_at: string; business: string; contact: string; phone: string; service: string; status: string;
   items: unknown; subtotal: number; service_fee: number; shipping_fee: number; total: number; weight_kg: number; packages: number;
   payment_plan: string | null; payment_method: string | null; payment_status: string; delivery_date: string | null;
-  slot: string | null; zone: string | null; address: string | null; taxi: unknown; history: unknown;
+  slot: string | null; zone: string | null; address: string | null; reference?: string | null; doc_type?: string | null; doc_number?: string | null; taxi: unknown; history: unknown;
 };
 
 export function fromRow(r: Row): Order {
@@ -19,6 +19,7 @@ export function fromRow(r: Row): Order {
     weightKg: Number(r.weight_kg), packages: r.packages, paymentPlan: r.payment_plan ?? "", paymentMethod: r.payment_method ?? "",
     paymentStatus: r.payment_status as Order["paymentStatus"], deliveryDate: r.delivery_date ?? "", slot: r.slot ?? "",
     zone: r.zone ?? undefined, address: r.address ?? undefined, taxi: (r.taxi ?? undefined) as Order["taxi"],
+    reference: r.reference ?? undefined, docType: r.doc_type ?? undefined, docNumber: r.doc_number ?? undefined,
     history: (r.history ?? []) as Order["history"],
   };
 }
