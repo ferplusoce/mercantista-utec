@@ -22,7 +22,7 @@ import { Experimento2 } from "@/components/Experimento2";
 import { AdminRequests } from "@/components/AdminRequests";
 import { useAuth } from "@/lib/auth";
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
