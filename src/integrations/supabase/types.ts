@@ -296,6 +296,7 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          photo_type: string | null
           price: number
           quality: string
           unit: string
@@ -312,6 +313,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          photo_type?: string | null
           price?: number
           quality?: string
           unit: string
@@ -328,6 +330,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          photo_type?: string | null
           price?: number
           quality?: string
           unit?: string
