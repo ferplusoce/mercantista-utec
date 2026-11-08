@@ -11,7 +11,7 @@ import { useCatalog } from "@/lib/catalog";
 import { cartSummary, clearCart, setState, useStore, type Order } from "@/lib/store";
 import { Card, Field, inputCls, requireFields } from "@/components/Field";
 
-export const Route = createFileRoute("/checkout")({
+export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({ meta: [
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

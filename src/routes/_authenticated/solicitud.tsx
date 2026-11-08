@@ -9,7 +9,7 @@ import { submitRequest } from "@/lib/requests";
 import { Button } from "@/components/ui/button";
 import { Card, Field, inputCls, requireFields } from "@/components/Field";
 
-export const Route = createFileRoute("/solicitud")({
+export const Route = createFileRoute("/_authenticated/solicitud")({
   validateSearch: (s: Record<string, unknown>) => ({ vendor: s.vendor as string | undefined }),
   head: () => ({ meta: [
     { property: "og:type", content: "website" },

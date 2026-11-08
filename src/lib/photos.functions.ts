@@ -1,14 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-/** Devuelve URLs firmadas (1 h) de las fotos de un pedido. Quien tenga el código del pedido puede verlas. */
+/** Devuelve URLs firmadas (1 h) solo al dueño del pedido o a un administrador. */
 export const getPhotoUrls = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { code: string }) => {
     if (typeof d?.code !== "string" || d.code.length > 40) throw new Error("código inválido");
     return { code: d.code.trim().toUpperCase() };
   })
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { data: order, error: orderError } = await context.supabase.from("orders").select("code").eq("code", data.code).maybeSingle();
+    if (orderError || !order) throw new Error("Pedido no encontrado");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin.from("order_items_photos").select("item_index, photo_url").eq("order_code", data.code);
+    const { data: rows, error } = await supabaseAdmin.from("order_items_photos").select("item_index, photo_url").eq("order_code", order.code);
     if (error) throw new Error("No se pudieron leer las fotos");
     const paths = (rows ?? []).filter((r) => r.photo_url).map((r) => r.photo_url as string);
     if (!paths.length) return {} as Record<number, string>;
