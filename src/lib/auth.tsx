@@ -4,10 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export const normalizePhone = (value: string) => value.replace(/\D/g, "");
-export const isValidPhone = (value: string) => /^9\d{8}$/.test(normalizePhone(value));
-export const customerEmail = (value: string) => `${normalizePhone(value)}@clientes.mercantista.pe`;
-export const safeReturnPath = (value?: string) => value?.startsWith("/") && !value.startsWith("//") ? value : "/mis-pedidos";
+export { normalizePhone, isValidPhone, customerEmail, safeReturnPath } from "./customer-auth";
 
 type AuthValue = { user: User | null; loading: boolean; signOut: () => Promise<void> };
 const AuthContext = createContext<AuthValue | null>(null);
