@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { customerEmail, isValidPassword, isValidPhone, normalizePhone, safeReturnPath } from "@/lib/customer-auth";
 import { useAuth } from "@/lib/auth";
+import { authSchema, fieldErrors } from "@/lib/validation";
+import { Button } from "@/components/ui/button";
 import { Card, Field, inputCls } from "@/components/Field";
 
 export const Route = createFileRoute("/auth")({
@@ -38,6 +40,8 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [attempted, setAttempted] = useState(false);
+  const errors = attempted ? fieldErrors(authSchema, { phone, password }) : {};
 
   useEffect(() => {
     if (!loading && user) void navigate({ href: destination, replace: true });
@@ -46,8 +50,8 @@ function AuthPage() {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
-    if (!isValidPhone(phone)) { setError("Ingresa un celular de 9 dígitos que empiece con 9"); return; }
-    if (!isValidPassword(password)) { setError("La contraseña debe tener mínimo 6 caracteres"); return; }
+    setAttempted(true);
+    if (!authSchema.safeParse({ phone, password }).success) return;
     setBusy(true);
     const credentials = { email: customerEmail(phone), password };
     try {
@@ -80,15 +84,15 @@ function AuthPage() {
       </div>
       <Card>
         <form onSubmit={submit} className="space-y-4">
-          <Field label="Celular" required error={error && !isValidPhone(phone) ? error : undefined}>
+          <Field label="Celular" required error={errors.phone}>
             <input className={inputCls} inputMode="numeric" autoComplete="username" maxLength={9} placeholder="9XXXXXXXX" value={phone} onChange={(e) => setPhone(normalizePhone(e.target.value).slice(0, 9))} />
           </Field>
-          <Field label="Contraseña" required error={error && isValidPhone(phone) ? error : undefined}>
+          <Field label="Contraseña" required error={errors.password || error || undefined}>
             <input className={inputCls} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={6} placeholder="Mínimo 6 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} />
           </Field>
-          <button disabled={busy || loading} className="h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">
+          <Button disabled={busy || loading || Object.keys(errors).length > 0} className="h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">
             {busy ? "Un momento..." : mode === "login" ? "Ingresar" : "Crear cuenta y entrar"}
-          </button>
+          </Button>
         </form>
       </Card>
       <p className="flex items-start gap-2 text-center text-xs text-muted-foreground"><LockKeyhole className="mx-auto h-4 w-4 shrink-0" />Tus pedidos y datos son privados. Al registrarte, tu cuenta queda activa de inmediato.</p>

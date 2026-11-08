@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { photoSchema, priceSchema } from "./validation";
 import { getPhotoUrls } from "./photos.functions";
 
 export type ItemPhoto = {
@@ -32,7 +33,9 @@ export function usePhotoActions(code: string) {
   const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ["photos", code.toUpperCase()] }), qc.invalidateQueries({ queryKey: ["order", code.toUpperCase()] }), qc.invalidateQueries({ queryKey: ["orders"] })]);
   return {
     upload: async (itemIndex: number, file: File, realPrice: number) => {
-      const path = `${code}/${itemIndex}-${crypto.randomUUID()}.jpg`;
+      photoSchema.parse(file); priceSchema.parse(realPrice);
+      const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+      const path = `${code}/${itemIndex}-${crypto.randomUUID()}.${ext}`;
       const up = await supabase.storage.from("order-photos").upload(path, file, { contentType: file.type || "image/jpeg" });
       if (up.error) throw up.error;
       const now = new Date().toISOString();

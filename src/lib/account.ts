@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./auth";
+import { profileSchema, accountAddressSchema, taxiSchema } from "./validation";
 
 export type AccountProfile = { business: string; owner: string; phone: string; docType: string; docNumber: string };
 export type Address = { id: string; zone: string; line: string; ref: string };
@@ -15,17 +16,18 @@ export function useAccount() {
     queryKey: ["account", user?.id],
     enabled: !!user,
     queryFn: async (): Promise<Account> => {
+      if (!user) throw new Error("Debes iniciar sesión");
       const [profileResult, addressesResult, taxisResult] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", user!.id).maybeSingle(),
-        supabase.from("addresses").select("*").eq("user_id", user!.id).order("created_at"),
-        supabase.from("taxis").select("*").eq("user_id", user!.id).order("created_at"),
+        supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("addresses").select("*").eq("user_id", user.id).order("created_at"),
+        supabase.from("taxis").select("*").eq("user_id", user.id).order("created_at"),
       ]);
       if (profileResult.error) throw profileResult.error;
       if (addressesResult.error) throw addressesResult.error;
       if (taxisResult.error) throw taxisResult.error;
       const p = profileResult.data;
       return {
-        profile: p ? { business: p.business_name, owner: p.owner_name, phone: p.phone, docType: p.doc_type, docNumber: p.doc_number } : emptyProfile(user!.email?.split("@")[0]),
+        profile: p ? { business: p.business_name, owner: p.owner_name, phone: p.phone, docType: p.doc_type, docNumber: p.doc_number } : emptyProfile(user.email?.split("@")[0]),
         addresses: addressesResult.data.map((a) => ({ id: a.id, zone: a.zone, line: a.line, ref: a.ref })),
         taxis: taxisResult.data.map((t) => ({ id: t.id, driver: t.driver, plate: t.plate, phone: t.phone })),
       };
@@ -40,12 +42,14 @@ export function useAccountActions() {
   const requireUser = () => { if (!user) throw new Error("Debes iniciar sesión"); return user; };
   return {
     saveProfile: async (profile: AccountProfile) => {
+      profileSchema.parse(profile);
       const u = requireUser();
       const { error } = await supabase.from("profiles").upsert({ user_id: u.id, business_name: profile.business.trim(), owner_name: profile.owner.trim(), phone: profile.phone, doc_type: profile.docType, doc_number: profile.docNumber.trim() });
       if (error) throw error;
       await refresh();
     },
     addAddress: async (address: Omit<Address, "id">) => {
+      accountAddressSchema.parse(address);
       const u = requireUser();
       const { error } = await supabase.from("addresses").insert({ ...address, user_id: u.id });
       if (error) throw error;
@@ -57,6 +61,7 @@ export function useAccountActions() {
       await refresh();
     },
     addTaxi: async (taxi: Omit<Taxi, "id">) => {
+      taxiSchema.parse(taxi);
       const u = requireUser();
       const { error } = await supabase.from("taxis").insert({ ...taxi, user_id: u.id });
       if (error) throw error;

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Order, OrderStatus } from "./store";
+import { priceSchema, quantitySchema, businessSchema, personSchema, phoneSchema, deliveryDateSchema, accountAddressSchema, taxiSchema, documentSchema } from "./validation";
 import { useAuth } from "./auth";
 
 type Row = {
@@ -24,11 +25,16 @@ export function fromRow(r: Row): Order {
 
 /** Guarda un pedido del usuario autenticado y devuelve el código asignado. */
 export async function createOrder(o: Omit<Order, "code" | "createdAt" | "status" | "history" | "paymentStatus">): Promise<string> {
+  businessSchema.parse(o.business); personSchema.parse(o.contact); phoneSchema.parse(o.phone); deliveryDateSchema.parse(o.deliveryDate);
+  documentSchema.parse({ docType: o.docType, docNumber: o.docNumber });
+  o.items.forEach((i) => { quantitySchema.parse(i.qty); priceSchema.parse(i.unitPrice); });
+  if (o.service === "minivan_delivery") accountAddressSchema.parse({ zone: o.zone, line: o.address, ref: o.reference });
+  else taxiSchema.parse(o.taxi);
   const { data, error } = await supabase.rpc("create_order", { p: {
     business: o.business, contact: o.contact, phone: o.phone, service: o.service, items: o.items,
     subtotal: o.subtotal, service_fee: o.serviceFee, shipping_fee: o.shippingFee, total: o.total,
     weight_kg: o.weightKg, packages: o.packages, payment_plan: o.paymentPlan, payment_method: o.paymentMethod,
-    delivery_date: o.deliveryDate, slot: o.slot, zone: o.zone ?? null, address: o.address ?? null, taxi: o.taxi ?? null,
+    reference: o.reference ?? null, doc_type: o.docType, doc_number: o.docNumber, delivery_date: o.deliveryDate, slot: o.slot, zone: o.zone ?? null, address: o.address ?? null, taxi: o.taxi ?? null,
   } });
   if (error) throw error;
   return data as string;
@@ -80,6 +86,7 @@ export function useOrderMutations() {
       if (error) throw error;
     },
     setItemPrice: async (o: Order, index: number, price: number) => {
+      priceSchema.parse(price);
       const items = o.items.map((x, i) => (i === index ? { ...x, unitPrice: price } : x));
       const subtotal = items.reduce((a, x) => a + x.qty * x.unitPrice, 0);
       const { error } = await supabase.from("orders").update({ items, subtotal, total: subtotal + o.serviceFee + o.shippingFee }).eq("code", o.code);

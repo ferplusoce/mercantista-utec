@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
 import type { Product } from "./data";
+import { quantitySchema } from "./validation";
+import { toast } from "sonner";
 
 export type CartItem = { productId: string; qty: number; note: string };
 export type OrderStatus = "received" | "verifying" | "purchasing" | "staging" | "on_the_way" | "delivered" | "cancelled";
@@ -9,7 +11,7 @@ export type Order = {
   items: { productId: string; name: string; vendorId: string; qty: number; unitPrice: number; unit: string; weightKg: number; note: string }[];
   subtotal: number; serviceFee: number; shippingFee: number; total: number; weightKg: number; packages: number;
   paymentPlan: string; paymentMethod: string; paymentStatus: "pending" | "partially_paid" | "paid";
-  deliveryDate: string; slot: string; address?: string; zone?: string;
+  deliveryDate: string; slot: string; address?: string; reference?: string; docType?: string; docNumber?: string; zone?: string;
   taxi?: { driver: string; plate: string; phone: string; arrival: string; meeting: string };
   history: { status: OrderStatus; at: string }[];
 };
@@ -55,9 +57,13 @@ export function useStore<T>(sel: (s: State) => T): T {
 
 export const addToCart = (productId: string, qty = 1) => setState((s) => {
   const ex = s.cart.find((c) => c.productId === productId);
+  if (!quantitySchema.safeParse((ex?.qty ?? 0) + qty).success) { toast.error("Cantidad entera de 1 a 50 por producto"); return {}; }
   return { cart: ex ? s.cart.map((c) => (c.productId === productId ? { ...c, qty: c.qty + qty } : c)) : [...s.cart, { productId, qty, note: "" }] };
 });
-export const updateCart = (productId: string, patch: Partial<CartItem>) => setState((s) => ({ cart: s.cart.map((c) => (c.productId === productId ? { ...c, ...patch } : c)).filter((c) => c.qty > 0) }));
+export const updateCart = (productId: string, patch: Partial<CartItem>) => setState((s) => {
+  if (patch.qty !== undefined && patch.qty !== 0 && !quantitySchema.safeParse(patch.qty).success) { toast.error("Cantidad entera de 1 a 50 por producto"); return {}; }
+  return { cart: s.cart.map((c) => (c.productId === productId ? { ...c, ...patch } : c)).filter((c) => c.qty > 0) };
+});
 export const clearCart = () => setState(() => ({ cart: [] }));
 
 export const STATUS_LABEL: Record<OrderStatus, string> = { received: "Pedido recibido", verifying: "Verificando precios y puestos", purchasing: "Comprando en Unicachi", staging: "En estiba / punto de encuentro", on_the_way: "En camino a tu bodega", delivered: "Entregado y completado", cancelled: "Cancelado" };
@@ -65,7 +71,7 @@ export const STATUS_FLOW: OrderStatus[] = ["received", "verifying", "purchasing"
 
 /** Resume el carrito con productos actuales. */
 export function cartSummary(cart: CartItem[], products: Product[]) {
-  const lines = cart.map((c) => ({ ...c, product: products.find((p) => p.id === c.productId)! })).filter((l) => l.product && l.product.active !== false);
+  const lines = cart.flatMap((c) => { const product = products.find((p) => p.id === c.productId); return product && product.active ? [{ ...c, product }] : []; });
   const subtotal = lines.reduce((s, l) => s + l.qty * l.product.price, 0);
   const weightKg = lines.reduce((s, l) => s + l.qty * l.product.weightKg, 0);
   const packages = lines.reduce((s, l) => s + l.qty, 0);
