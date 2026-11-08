@@ -1,4 +1,7 @@
 # Team feedback
+- [ ] Restrict install button to eligible Android and iPhone Safari, never installed or desktop.
+- [ ] Verify all screens at 360px and ensure buttons are at least 44px tall.
+- [ ] Add skeleton loading and clear connection errors with retry; verify failure/recovery.
 - [x] Replace fixed-key admin access with phone/password accounts and admin-only navigation.
 - [x] Complete orders, product and vendor management; add category editing and retain tariffs, requests and Experiment 2.
 - [x] Replace sample summaries/cost charts with real Cloud metrics and empty states.
