@@ -3,7 +3,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { LockKeyhole, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { customerEmail, isValidPhone, normalizePhone, safeReturnPath, useAuth } from "@/lib/auth";
+import { customerEmail, isValidPassword, isValidPhone, normalizePhone, safeReturnPath } from "@/lib/customer-auth";
+import { useAuth } from "@/lib/auth";
 import { Card, Field, inputCls } from "@/components/Field";
 
 export const Route = createFileRoute("/auth")({
@@ -46,7 +47,7 @@ function AuthPage() {
     event.preventDefault();
     setError("");
     if (!isValidPhone(phone)) { setError("Ingresa un celular de 9 dígitos que empiece con 9"); return; }
-    if (password.length < 6) { setError("La contraseña debe tener mínimo 6 caracteres"); return; }
+    if (!isValidPassword(password)) { setError("La contraseña debe tener mínimo 6 caracteres"); return; }
     setBusy(true);
     const credentials = { email: customerEmail(phone), password };
     try {

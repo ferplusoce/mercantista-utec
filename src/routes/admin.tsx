@@ -17,6 +17,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { loginWithAdminKey } from "@/lib/admin-key.functions";
 import { Experimento2 } from "@/components/Experimento2";
 import { AdminRequests } from "@/components/AdminRequests";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [
@@ -53,17 +54,18 @@ function Login() {
 
 function Admin() {
   const a = useAdmin();
+  const { signOut } = useAuth();
   if (a.loading) return <p className="text-center text-muted-foreground">Cargando...</p>;
   if (!a.email) return <Login />;
   if (!a.isAdmin) return (
     <Card className="mx-auto max-w-sm space-y-3 text-center">
       <p className="font-semibold">{a.email} no tiene permisos de administrador.</p>
-      <button className="h-11 w-full rounded-xl border font-semibold" onClick={() => supabase.auth.signOut()}>Cerrar sesión</button>
+      <button className="h-11 w-full rounded-xl border font-semibold" onClick={() => void signOut()}>Cerrar sesión</button>
     </Card>
   );
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2"><h1 className="text-3xl font-bold">Panel de operaciones</h1><button className="rounded-lg border px-3 py-1.5 text-sm" onClick={() => supabase.auth.signOut()}>Cerrar sesión</button></div>
+      <div className="flex flex-wrap items-center justify-between gap-2"><h1 className="text-3xl font-bold">Panel de operaciones</h1><button className="rounded-lg border px-3 py-1.5 text-sm" onClick={() => void signOut()}>Cerrar sesión</button></div>
       <Tabs defaultValue="resumen">
         <TabsList className="h-auto flex-wrap">
           {["resumen", "pedidos", "productos", "puestos", "tarifas", "reportes"].map((t) => <TabsTrigger key={t} value={t} className="capitalize">{t}</TabsTrigger>)}

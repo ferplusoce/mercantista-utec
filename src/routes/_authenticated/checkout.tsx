@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Car, CheckCircle2, Download, MessageCircle, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { SLOTS, ZONES, soles, waLink } from "@/lib/data";
@@ -8,7 +8,8 @@ import { createOrder } from "@/lib/orders";
 import { markOrderSent } from "@/lib/opinions";
 import { OpinionForm } from "@/components/OpinionForm";
 import { useCatalog } from "@/lib/catalog";
-import { cartSummary, clearCart, setState, useStore, type Order } from "@/lib/store";
+import { cartSummary, clearCart, useStore, type Order } from "@/lib/store";
+import { useAccount } from "@/lib/account";
 import { Card, Field, inputCls, requireFields } from "@/components/Field";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
@@ -29,7 +30,8 @@ const METHODS = ["Yape / Plin", "Transferencia BCP / BBVA / Interbank", "Efectiv
 function Checkout() {
   const cart = useStore((s) => s.cart);
   const { products, vendors, tariffs: t } = useCatalog();
-  const profile = useStore((s) => s.profile);
+  const account = useAccount().data;
+  const profile = account?.profile;
   const sum = cartSummary(cart, products);
   const [service, setService] = useState<Order["service"]>("minivan_delivery");
   const [f, setF] = useState<Record<string, string>>({ business: "", contact: "", phone: "", date: new Date(Date.now() + 864e5).toISOString().slice(0, 10), slot: SLOTS[0], zone: ZONES[0], address: "", driver: "", plate: "", dphone: "", arrival: "05:00", meeting: "Puerta 2", plan: PLANS[0], method: METHODS[0], doc: "", razon: "", billAddr: "" });
@@ -37,6 +39,18 @@ function Checkout() {
   const [done, setDone] = useState<Order | null>(null);
   const [saving, setSaving] = useState(false);
   const set = (k: string) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+
+  useEffect(() => {
+    if (!account) return;
+    setF((current) => ({
+      ...current,
+      business: current.business || account.profile.business,
+      contact: current.contact || account.profile.owner,
+      phone: current.phone || account.profile.phone,
+      address: current.address || account.addresses[0]?.line || "",
+      doc: current.doc || account.profile.docNumber,
+    }));
+  }, [account]);
 
   if (done) return <Success o={done} />;
   if (!sum.lines.length) return <div className="rounded-2xl border bg-card p-10 text-center"><p className="font-semibold">No hay productos en tu pedido.</p><Link to="/catalogo" className="mt-3 inline-block text-primary">Ir al catálogo →</Link></div>;
@@ -65,7 +79,6 @@ function Checkout() {
     };
     setSaving(true);
     try { o.code = await createOrder(o); } catch { toast.error("No pudimos guardar tu pedido. Revisa tu conexión e inténtalo otra vez."); return; } finally { setSaving(false); }
-    setState((s) => ({ orders: [o, ...s.orders] }));
     markOrderSent(o.code);
     clearCart();
     toast.success(`Pedido ${o.code} registrado`);
@@ -88,7 +101,7 @@ function Checkout() {
 
         <Card className="grid gap-3 md:grid-cols-2">
           <h2 className="font-bold md:col-span-2">Datos del negocio</h2>
-          <div className="md:col-span-2">{profile.business && <button className="text-sm text-primary" onClick={() => setF({ ...f, business: profile.business, contact: profile.owner, phone: profile.phone, address: profile.addresses[0]?.line ?? "", doc: profile.doc })}>Usar datos de mi cuenta ({profile.business})</button>}</div>
+          <div className="md:col-span-2">{profile?.business && <button className="text-sm text-primary" onClick={() => setF({ ...f, business: profile.business, contact: profile.owner, phone: profile.phone, address: account?.addresses[0]?.line ?? "", doc: profile.docNumber })}>Usar datos de mi cuenta ({profile.business})</button>}</div>
           <Field label="Bodega / negocio" required error={err.business}><input className={inputCls} value={f.business} onChange={set("business")} /></Field>
           <Field label="Responsable" required error={err.contact}><input className={inputCls} value={f.contact} onChange={set("contact")} /></Field>
           <Field label="Celular / WhatsApp" required error={err.phone}><input className={inputCls} inputMode="tel" value={f.phone} onChange={set("phone")} /></Field>
@@ -98,7 +111,7 @@ function Checkout() {
         {service === "taxi_delivery" ? (
           <Card className="grid gap-3 md:grid-cols-2">
             <h2 className="font-bold md:col-span-2">Datos de tu taxi de confianza</h2>
-            {profile.taxis.length > 0 && <div className="flex flex-wrap gap-2 md:col-span-2">{profile.taxis.map((x) => <button key={x.plate} onClick={() => setF({ ...f, driver: x.driver, plate: x.plate, dphone: x.phone })} className="rounded-full border px-3 py-1.5 text-sm">🚕 {x.driver} · {x.plate}</button>)}</div>}
+            {!!account?.taxis.length && <div className="flex flex-wrap gap-2 md:col-span-2">{account.taxis.map((x) => <button key={x.id} onClick={() => setF({ ...f, driver: x.driver, plate: x.plate, dphone: x.phone })} className="rounded-full border px-3 py-1.5 text-sm">🚕 {x.driver} · {x.plate}</button>)}</div>}
             <Field label="Nombre del chofer" required error={err.driver}><input className={inputCls} value={f.driver} onChange={set("driver")} /></Field>
             <Field label="Placa del vehículo" required error={err.plate}><input className={inputCls} value={f.plate} onChange={set("plate")} placeholder="ABC-123" /></Field>
             <Field label="Celular del conductor" required error={err.dphone}><input className={inputCls} value={f.dphone} onChange={set("dphone")} /></Field>

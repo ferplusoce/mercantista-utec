@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, ImageUp, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ZONES, waLink } from "@/lib/data";
 import { type CustomRequest } from "@/lib/store";
 import { useCatalog } from "@/lib/catalog";
 import { submitRequest } from "@/lib/requests";
+import { useAccount } from "@/lib/account";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, Field, inputCls, requireFields } from "@/components/Field";
 
@@ -28,6 +30,8 @@ const empty = (vendor = ""): Row => ({ name: "", qty: "1", unit: "Saco", quality
 function Solicitud() {
   const { vendor } = Route.useSearch();
   const vendors = useCatalog().vendors.filter((v) => v.active);
+  const { user } = useAuth();
+  const account = useAccount().data;
   const [mode, setMode] = useState<"lista" | "foto">("lista");
   const [rows, setRows] = useState<Row[]>([empty(vendor)]);
   const [file, setFile] = useState<{ name: string; url?: string; raw: File } | null>(null);
@@ -37,8 +41,14 @@ function Solicitud() {
   const [done, setDone] = useState<string | null>(null);
   const upd = (i: number, k: keyof Row, v: string) => setRows((r) => r.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
 
+  useEffect(() => {
+    if (!account) return;
+    setF((current) => ({ ...current, business: current.business || account.profile.business, contact: current.contact || account.profile.owner, phone: current.phone || account.profile.phone, address: current.address || account.addresses[0]?.line || "" }));
+  }, [account]);
+
   const submit = async () => {
     if (sending) return;
+    if (!user) { toast.error("Debes iniciar sesión"); return; }
     const e = requireFields(f, ["business", "contact", "phone", "address", "date"]);
     const items = rows.filter((r) => r.name.trim());
     if (mode === "lista" && items.length === 0) e.items = "Agrega al menos un producto";
@@ -47,7 +57,7 @@ function Solicitud() {
     if (Object.keys(e).length) { toast.error("Revisa los campos marcados"); return; }
     setSending(true);
     try {
-      const code = await submitRequest({ business: f.business, contact: f.contact, phone: f.phone, address: f.address, zone: f.zone, delivery_date: f.date, items: mode === "lista" ? items : [] }, mode === "foto" ? file?.raw : undefined);
+      const code = await submitRequest({ business: f.business, contact: f.contact, phone: f.phone, address: f.address, zone: f.zone, delivery_date: f.date, items: mode === "lista" ? items : [] }, mode === "foto" ? file?.raw : undefined, user.id);
       toast.success("Solicitud enviada"); setDone(code);
     } catch (error) { toast.error(error instanceof Error && error.name !== "ZodError" ? error.message : "Revisa los datos: celular de 9 dígitos y cantidades mayores a cero"); }
     finally { setSending(false); }

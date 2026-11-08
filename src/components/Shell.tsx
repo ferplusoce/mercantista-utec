@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Home, LayoutGrid, MapPin, PackageSearch, Search, ShoppingBag, Store, User, ClipboardList, Leaf } from "lucide-react";
+import { Home, LayoutGrid, LogOut, MapPin, PackageSearch, Search, ShoppingBag, Store, User, ClipboardList, Leaf } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useCatalog } from "@/lib/catalog";
+import { useAuth } from "@/lib/auth";
 import { WelcomeDialog } from "@/components/Welcome";
 
 export function Logo() {
@@ -43,7 +44,8 @@ function SearchBox() {
 
 export function Header() {
   const count = useStore((s) => s.cart.reduce((n, c) => n + c.qty, 0));
-  const links = [["/catalogo", "Catálogo"], ["/puestos", "Puestos"], ["/servicios", "Servicios y tarifas"], ["/seguimiento", "Seguimiento"], ["/admin", "Panel"]] as const;
+  const { user, signOut } = useAuth();
+  const links = [["/catalogo", "Catálogo"], ["/puestos", "Puestos"], ["/servicios", "Servicios y tarifas"], ["/mis-pedidos", "Mis pedidos"], ["/admin", "Panel"]] as const;
   return (
     <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
       <div className="bg-foreground px-4 py-1.5 text-center text-xs text-background">
@@ -53,7 +55,8 @@ export function Header() {
         <Logo />
         <div className="hidden flex-1 md:block"><SearchBox /></div>
         <Link to="/solicitud" search={{ vendor: undefined }} className="hidden rounded-xl border bg-card px-3 py-2 text-sm font-medium hover:bg-muted lg:inline-flex"><ClipboardList className="mr-1.5 h-4 w-4" />Solicitud personalizada</Link>
-        <Link to="/cuenta" className="ml-auto hidden rounded-xl p-2 hover:bg-muted md:block md:ml-0" aria-label="Mi cuenta"><User className="h-5 w-5" /></Link>
+        <Link to={user ? "/cuenta" : "/auth"} search={user ? undefined : { redirect: undefined }} className="ml-auto hidden rounded-xl p-2 hover:bg-muted md:block md:ml-0" aria-label={user ? "Mi cuenta" : "Iniciar sesión"}><User className="h-5 w-5" /></Link>
+        {user && <button onClick={() => void signOut()} className="hidden rounded-xl p-2 hover:bg-muted md:block" aria-label="Cerrar sesión" title="Cerrar sesión"><LogOut className="h-5 w-5" /></button>}
         <Link to="/carrito" className="relative ml-auto rounded-xl bg-primary p-2.5 text-primary-foreground md:ml-0" aria-label="Carrito">
           <ShoppingBag className="h-5 w-5" />
           {count > 0 && <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-foreground px-1 text-[11px] font-bold text-background">{count}</span>}
@@ -69,7 +72,7 @@ export function Header() {
 }
 
 export function MobileNav() {
-  const items = [["/", Home, "Inicio"], ["/catalogo", LayoutGrid, "Catálogo"], ["/puestos", Store, "Puestos"], ["/seguimiento", PackageSearch, "Pedidos"], ["/cuenta", User, "Cuenta"]] as const;
+  const items = [["/", Home, "Inicio"], ["/catalogo", LayoutGrid, "Catálogo"], ["/puestos", Store, "Puestos"], ["/mis-pedidos", PackageSearch, "Mis pedidos"], ["/cuenta", User, "Cuenta"]] as const;
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
       {items.map(([to, Icon, l]) => (
