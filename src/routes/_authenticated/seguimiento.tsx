@@ -7,6 +7,7 @@ import { STATUS_FLOW, STATUS_LABEL, type Order } from "@/lib/store";
 import { Card } from "@/components/Field";
 import { useMyOrders, useOrderByCode } from "@/lib/orders";
 import { ClientPhotos } from "@/components/PhotoApproval";
+import { DataSkeleton, ConnectionError } from "@/components/DataState";
 
 export const Route = createFileRoute("/_authenticated/seguimiento")({
   validateSearch: (s: Record<string, unknown>) => ({ code: s.code as string | undefined }),
@@ -35,21 +36,24 @@ function Seguimiento() {
   const { code } = Route.useSearch();
   const nav = useNavigate();
   const [q, setQ] = useState(code ?? "");
-  const { data: orders = [] } = useMyOrders();
+  const recent = useMyOrders();
+  const orders = recent.data ?? [];
   const wa = useCatalog().tariffs.whatsapp;
-  const { data: found, isLoading, isError } = useOrderByCode(code);
+  const { data: found, isLoading, isError, refetch } = useOrderByCode(code);
   const o = found ?? undefined;
   const idx = o ? STATUS_FLOW.indexOf(o.status) : -1;
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <h1 className="text-3xl font-bold">Seguimiento de pedido</h1>
-      <form onSubmit={(e) => { e.preventDefault(); nav({ to: "/seguimiento", search: { code: q.trim() } }); }} className="flex gap-2">
+      <form onSubmit={(e) => { e.preventDefault(); nav({ to: "/seguimiento", search: { code: q.trim() } }); }} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ej. MCT-2026-0842" className="h-12 flex-1 rounded-xl border bg-card px-4 uppercase" />
         <button className="h-12 rounded-xl bg-primary px-5 font-semibold text-primary-foreground">Consultar</button>
       </form>
       <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">{orders.length > 0 && "Tus pedidos recientes: "}{orders.slice(0, 4).map((x) => <button key={x.code} onClick={() => { setQ(x.code); nav({ to: "/seguimiento", search: { code: x.code } }); }} className="rounded-full border px-2.5 py-0.5">{x.code}</button>)}</div>
-      {code && isLoading && <p className="text-center text-muted-foreground">Buscando pedido...</p>}
-      {code && isError && <p className="text-center text-destructive">No pudimos consultar el pedido. Inténtalo de nuevo.</p>}
+      {!code && recent.isLoading && <DataSkeleton />}
+      {!code && recent.isError && <ConnectionError retry={recent.refetch} />}
+      {code && isLoading && <DataSkeleton />}
+      {code && isError && <ConnectionError retry={refetch} />}
       {code && !isLoading && !isError && !o && <Card className="text-center"><PackageSearch className="mx-auto h-10 w-10 text-muted-foreground" /><p className="mt-2 font-semibold">No encontramos el pedido {code}</p><p className="text-sm text-muted-foreground">Revisa el código o escríbenos por WhatsApp.</p></Card>}
       {o && (
         <Card className="space-y-5">

@@ -7,12 +7,14 @@ import { toast } from "sonner";
 import { soles } from "@/lib/data";
 import { type Order } from "@/lib/store";
 import { responseMinutes, useOrderPhotos, usePhotoActions } from "@/lib/photos";
+import { DataSkeleton, ConnectionError } from "@/components/DataState";
 
 const STATUS_TXT = { pendiente: "Esperando al cliente", aprobado: "Aprobado", cambiar: "Pide cambio" } as const;
 
 /** Panel del comprador: subir foto y precio real por producto. */
 export function AdminPhotos({ o }: { o: Order }) {
-  const { data: photos = [] } = useOrderPhotos(o.code);
+  const query = useOrderPhotos(o.code);
+  const photos = query.data ?? [];
   const act = usePhotoActions(o.code);
   const vendors = useCatalog().vendors;
   const [busy, setBusy] = useState<number | null>(null);
@@ -34,6 +36,8 @@ export function AdminPhotos({ o }: { o: Order }) {
     try { await act.upload(idx, file, price); toast.success("Foto enviada al cliente"); } catch { toast.error("No se pudo subir la foto"); } finally { setBusy(null); }
   };
 
+  if (query.isLoading) return <DataSkeleton />;
+  if (query.isError) return <ConnectionError retry={query.refetch} />;
   return (
     <div className="space-y-3 rounded-xl border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -54,9 +58,9 @@ export function AdminPhotos({ o }: { o: Order }) {
               {p && <p className="text-xs">{STATUS_TXT[p.status]} · {soles(p.real_price ?? 0)}{mins !== null && ` · respondió en ${mins} min`}{p.client_comment && <> · <em>"{p.client_comment}"</em></>}</p>}
               {errors[idx] && <p role="alert" className="text-xs text-destructive">{errors[idx]}</p>}
               {canUpload && p?.status !== "aprobado" && (
-                <div className="flex gap-2">
-                  <ValidatedInput schema={priceSchema} onValidityChange={(valid) => setInvalidPrices({ ...invalidPrices, [idx]: !valid })} type="number" step="0.5" inputMode="decimal" aria-label="Precio real" placeholder="Precio real" className="h-10 w-24 rounded-lg border bg-card px-2" value={prices[idx] ?? String(p?.real_price ?? it.unitPrice)} onCommit={(v) => setPrices({ ...prices, [idx]: v })} />
-                  <label className={`inline-flex h-10 flex-1 cursor-pointer items-center justify-center rounded-lg bg-primary px-3 font-semibold text-primary-foreground ${busy === idx ? "opacity-50" : ""}`}>
+                <div className="grid gap-2 sm:grid-cols-[96px_minmax(0,1fr)]">
+                  <ValidatedInput schema={priceSchema} onValidityChange={(valid) => setInvalidPrices({ ...invalidPrices, [idx]: !valid })} type="number" step="0.5" inputMode="decimal" aria-label="Precio real" placeholder="Precio real" className="h-11 w-full rounded-lg border bg-card px-2" value={prices[idx] ?? String(p?.real_price ?? it.unitPrice)} onCommit={(v) => setPrices({ ...prices, [idx]: v })} />
+                  <label className={`inline-flex h-11 min-w-0 cursor-pointer items-center justify-center rounded-lg bg-primary px-3 font-semibold text-primary-foreground ${busy === idx ? "opacity-50" : ""}`}>
                     <Camera className="mr-1 h-4 w-4" />{busy === idx ? "Subiendo..." : p ? "Nueva foto" : "Tomar foto"}
                     <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="hidden" disabled={busy !== null || invalidPrices[idx]} onChange={(e) => { onFile(idx, e.target.files?.[0]); e.target.value = ""; }} />
                   </label>
@@ -72,12 +76,15 @@ export function AdminPhotos({ o }: { o: Order }) {
 
 /** Vista del cliente: aprobar o pedir cambio de cada producto. */
 export function ClientPhotos({ o }: { o: Order }) {
-  const { data: photos = [] } = useOrderPhotos(o.code);
+  const query = useOrderPhotos(o.code);
+  const photos = query.data ?? [];
   const act = usePhotoActions(o.code);
   const vendors = useCatalog().vendors;
   const [changing, setChanging] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
+  if (query.isLoading) return <DataSkeleton />;
+  if (query.isError) return <ConnectionError retry={query.refetch} />;
   if (!photos.length) return null;
 
   const respond = async (idx: number, ok: boolean) => {

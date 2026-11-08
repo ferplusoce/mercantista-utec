@@ -10,6 +10,7 @@ import { Photo, ProductCard } from "@/components/ProductCard";
 import { VendorCard } from "@/components/VendorCard";
 import { InstallButton } from "@/components/InstallButton";
 import { HowItWorks } from "@/components/HowItWorks";
+import { DataSkeleton, ConnectionError } from "@/components/DataState";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
@@ -25,8 +26,8 @@ export const Route = createFileRoute("/")({
 
 function SectionTitle({ title, sub, link }: { title: string; sub?: string; link?: { to: string; label: string } }) {
   return (
-    <div className="mb-4 flex items-end justify-between gap-4">
-      <div><h2 className="text-2xl font-bold md:text-3xl">{title}</h2>{sub && <p className="text-muted-foreground">{sub}</p>}</div>
+    <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+      <div className="min-w-0"><h2 className="text-2xl font-bold md:text-3xl">{title}</h2>{sub && <p className="text-muted-foreground">{sub}</p>}</div>
       {link && <Link to={link.to} className="shrink-0 text-sm font-semibold text-primary">{link.label} →</Link>}
     </div>
   );
@@ -77,10 +78,10 @@ function Index() {
         })}
       </div>
 
-      {masPedido.length > 0 && <section>
+      <section>
         <SectionTitle title="Lo más pedido" sub="Lo que más compran las bodegas este mes" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{masPedido.map((p) => <TopCard key={p.id} p={p} />)}</div>
-      </section>}
+        {top.isPending ? <DataSkeleton /> : top.isError ? <ConnectionError retry={top.refetch} /> : <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{masPedido.map((p) => <TopCard key={p.id} p={p} />)}</div>}
+      </section>
 
       <section>
         <SectionTitle title="Categorías" sub="Todo por mayor: sacos, jabas, mallas y atados" />

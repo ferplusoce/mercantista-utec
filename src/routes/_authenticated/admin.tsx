@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter, type ErrorComponentProps } from "@tanstack/react-router";
+import { DataSkeleton, ConnectionError } from "@/components/DataState";
 import { z } from "zod";
 import { priceSchema, phoneSchema, optionalPhoneSchema, personSchema, businessSchema, digits } from "@/lib/validation";
 import { ValidatedInput } from "@/components/ValidatedInput";
@@ -24,9 +25,9 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => { await requireAdminRole(); },
   loader: ({ context }) => context.queryClient.ensureQueryData(adminDashboardOptions),
-  errorComponent: () => <div className="space-y-4 py-10 text-center"><h1 className="text-2xl font-bold">Acceso restringido</h1><p>Esta cuenta no tiene permisos de administrador.</p><Button asChild variant="outline"><Link to="/cuenta">Ir a mi cuenta</Link></Button></div>,
+  errorComponent: AdminError,
   notFoundComponent: () => <p>Panel no disponible</p>,
-  pendingComponent: () => <p>Cargando panel...</p>,
+  pendingComponent: DataSkeleton,
   head: () => ({ meta: [
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
@@ -38,6 +39,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
   ] }),
   component: Admin,
 });
+
+function AdminError({ error, reset }: ErrorComponentProps) {
+  const router = useRouter();
+  if (error.message !== "No tienes permisos de administrador") return <ConnectionError retry={async () => { await router.invalidate(); reset(); }} />;
+  return <div className="space-y-4 py-10 text-center"><h1 className="text-2xl font-bold">Acceso restringido</h1><p>Esta cuenta no tiene permisos de administrador.</p><Button asChild variant="outline"><Link to="/cuenta">Ir a mi cuenta</Link></Button></div>;
+}
 
 function Admin() {
   const { signOut } = useAuth();
@@ -100,8 +107,9 @@ function Pedidos() {
             </tr>
           ))}</tbody>
         </table>
-        {q.isLoading && <p className="p-6 text-center text-muted-foreground">Cargando pedidos...</p>}
-        {!q.isLoading && list.length === 0 && <p className="p-6 text-center text-muted-foreground">Aún no hay datos</p>}
+        {q.isLoading && <DataSkeleton />}
+        {q.isError && <ConnectionError retry={q.refetch} />}
+        {!q.isLoading && !q.isError && list.length === 0 && <p className="p-6 text-center text-muted-foreground">Aún no hay datos</p>}
       </div>
       <Dialog open={!!live} onOpenChange={() => setOpen(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl">
@@ -188,7 +196,7 @@ function Puestos() {
           {([["name", "Nombre"], ["stall", "Número"], ["pavilion", "Pabellón"], ["contact", "Responsable"], ["phone", "Teléfono"], ["schedule", "Horario"], ["specialty", "Especialidad"]] as const).map(([k, l]) => (
             <label key={k} className={k === "specialty" ? "col-span-2" : ""}><span className="text-xs text-muted-foreground">{l}</span><ValidatedInput className="h-9 w-full rounded-lg border bg-card px-2" inputMode={k === "phone" ? "numeric" : "text"} maxLength={k === "phone" ? 9 : undefined} transform={k === "phone" ? digits : undefined} value={v[k]} schema={k === "phone" ? optionalPhoneSchema : k === "contact" ? z.union([z.literal(""), personSchema]) : k === "name" ? businessSchema : z.string().max(200, "Máximo 200 caracteres")} onCommit={(value) => patch(v.id, { [k]: value })} /></label>
           ))}
-          <div className="col-span-2 flex gap-2">
+          <div className="col-span-2 flex flex-wrap gap-2">
             <Button className="inline-flex h-9 items-center rounded-lg border px-3" onClick={() => patch(v.id, { active: !v.active })}>{v.active ? <><Pause className="mr-1 h-4 w-4" />Pausar</> : <><Play className="mr-1 h-4 w-4" />Activar</>}</Button>
             <Button className="inline-flex h-9 items-center rounded-lg border px-3" onClick={() => patch(v.id, { verified: !v.verified })}>{v.verified ? "Quitar verificado" : "Verificar"}</Button>
             <Button variant="outline" onClick={() => setEditor(v)}><Pencil />Editar</Button>

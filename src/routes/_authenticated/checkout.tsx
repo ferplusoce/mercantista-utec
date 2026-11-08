@@ -13,6 +13,7 @@ import { useAccount } from "@/lib/account";
 import { checkoutSchema, fieldErrors, formatPlate, digits, deliveryBounds, nextDeliveryDate, quantitySchema } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { Card, Field, inputCls } from "@/components/Field";
+import { DataSkeleton, ConnectionError } from "@/components/DataState";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({ meta: [
@@ -32,7 +33,8 @@ const METHODS = ["Yape / Plin", "Transferencia BCP / BBVA / Interbank", "Efectiv
 function Checkout() {
   const cart = useStore((s) => s.cart);
   const { products, vendors, tariffs: t } = useCatalog();
-  const account = useAccount().data;
+  const accountQuery = useAccount();
+  const account = accountQuery.data;
   const profile = account?.profile;
   const sum = cartSummary(cart, products);
   const [service, setService] = useState<Order["service"]>("minivan_delivery");
@@ -57,6 +59,8 @@ function Checkout() {
   }, [account]);
 
   if (done) return <Success o={done} />;
+  if (accountQuery.isLoading) return <DataSkeleton />;
+  if (accountQuery.isError) return <ConnectionError retry={accountQuery.refetch} />;
   if (!sum.lines.length) return <div className="rounded-2xl border bg-card p-10 text-center"><p className="font-semibold">No hay productos en tu pedido.</p><Link to="/catalogo" className="mt-3 inline-block text-primary">Ir al catálogo →</Link></div>;
 
   const mv = vanFee({ zone: f.zone, kg: sum.weightKg }, t);

@@ -15,7 +15,9 @@ const dashboardSchema = z.object({ today: z.number(), week: z.number(), revenue:
 export const adminDashboardOptions = queryOptions({ queryKey: ["admin", "dashboard"], queryFn: async () => { const { data, error } = await supabase.rpc("admin_dashboard"); if (error) throw error; return dashboardSchema.parse(data); }, staleTime: 30000, refetchInterval: 30000 });
 export async function requireAdminRole() {
   const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) throw new Error("Debes iniciar sesión");
+  if (error) throw error;
+  if (!user) throw new Error("Debes iniciar sesión");
   const { data, error: roleError } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-  if (roleError || !data) throw new Error("No tienes permisos de administrador");
+  if (roleError) throw roleError;
+  if (!data) throw new Error("No tienes permisos de administrador");
 }

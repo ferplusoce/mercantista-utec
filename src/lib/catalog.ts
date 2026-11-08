@@ -31,13 +31,15 @@ async function resolveImages(paths: string[]) {
 }
 
 export async function refreshCatalog() {
+  if (cat.error) set({ loaded: false, error: false });
+  try {
   const [c, v, p, s] = await Promise.all([
     supabase.from("categories").select("*").order("sort_order"),
     supabase.from("vendors").select("*").order("stall"),
     supabase.from("products").select("*").order("name"),
     supabase.from("settings").select("*").eq("id", 1).maybeSingle(),
   ]);
-  if (c.error || v.error || p.error) { set({ loaded: true, error: true }); return; }
+  if (c.error || v.error || p.error || s.error) { set({ loaded: true, error: true }); return; }
   const img = await resolveImages([...(c.data ?? []).map((x) => x.image_url ?? ""), ...(p.data ?? []).map((x) => x.image_url ?? "")]);
   const t = (s.data?.tariffs ?? {}) as Partial<Tariffs>;
   set({
@@ -47,6 +49,7 @@ export async function refreshCatalog() {
     products: (p.data ?? []).map((x) => ({ id: x.id, name: x.name, category: x.category_id ?? "", vendorId: x.vendor_id, unit: x.unit, format: x.format as Product["format"], weightKg: Number(x.weight_kg), price: Number(x.price), quality: x.quality as Product["quality"], availability: x.availability as Availability, desc: x.description, imagePath: x.image_url, image: img(x.image_url), active: x.active })),
     tariffs: { ...DEFAULT_TARIFFS, ...t, whatsapp: s.data?.whatsapp || DEFAULT_TARIFFS.whatsapp },
   });
+  } catch { set({ loaded: true, error: true }); }
 }
 
 function start() { if (started || typeof window === "undefined") return; started = true; void refreshCatalog(); }
@@ -166,7 +169,7 @@ export async function uploadImage(kind: "products" | "categories", id: string, f
 /** "Lo más pedido": ids de los productos con más unidades en los últimos 30 días. */
 export async function fetchTopProductIds(): Promise<string[]> {
   const { data, error } = await supabase.rpc("top_products", { _days: 30, _limit: 8 });
-  if (error) return [];
+  if (error) throw error;
   return (data ?? []).map((r) => r.product_id).filter(Boolean);
 }
 

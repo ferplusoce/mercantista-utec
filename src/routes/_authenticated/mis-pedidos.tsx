@@ -5,6 +5,7 @@ import { soles } from "@/lib/data";
 import { useMyOrders } from "@/lib/orders";
 import { addToCart, STATUS_LABEL } from "@/lib/store";
 import { Card } from "@/components/Field";
+import { DataSkeleton, ConnectionError } from "@/components/DataState";
 
 export const Route = createFileRoute("/_authenticated/mis-pedidos")({
   head: () => ({ meta: [
@@ -33,8 +34,8 @@ function MisPedidos() {
   return (
     <div className="mx-auto max-w-4xl space-y-5">
       <div><h1 className="text-3xl font-bold">Mis pedidos</h1><p className="mt-1 text-muted-foreground">Sigue tus compras y aprueba las fotos de tus productos.</p></div>
-      {query.isLoading && <Card>Cargando tus pedidos...</Card>}
-      {query.isError && <Card className="text-destructive">No pudimos cargar tus pedidos. Inténtalo otra vez.</Card>}
+      {query.isLoading && <DataSkeleton />}
+      {query.isError && <ConnectionError retry={query.refetch} />}
       {!query.isLoading && !query.isError && !query.data?.length && (
         <Card className="py-12 text-center"><PackageOpen className="mx-auto h-12 w-12 text-muted-foreground" /><h2 className="mt-3 text-xl font-bold">Aún no tienes pedidos</h2><p className="mt-1 text-muted-foreground">Arma tu primera compra en el catálogo.</p><Link to="/catalogo" className="mt-5 inline-flex h-12 items-center rounded-xl bg-primary px-6 font-semibold text-primary-foreground">Explorar catálogo</Link></Card>
       )}
