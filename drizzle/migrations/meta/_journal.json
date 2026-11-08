@@ -50,6 +50,13 @@
       "when": 1794175720033,
       "tag": "0006_complete_write_validation",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794176177365,
+      "tag": "0007_admin_real_dashboard_and_catalog_validation",
+      "breakpoints": true
     }
   ]
 }

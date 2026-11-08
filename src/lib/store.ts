@@ -16,13 +16,12 @@ export type Order = {
   history: { status: OrderStatus; at: string }[];
 };
 export type CustomRequest = { code: string; createdAt: string; business: string; contact: string; phone: string; address: string; date: string; items: { name: string; qty: string; unit: string; quality: string; vendor: string; notes: string }[]; attachment?: string; status: "pending" | "quoted" | "approved" | "rejected" };
-export type Cost = { date: string; fuel: number; driver: number; maintenance: number; other: number };
 
-type State = { cart: CartItem[]; costs: Cost[] };
+type State = { cart: CartItem[] };
 
 const initial = (): State => ({
   cart: [],
-  costs: Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 6 + i); return { date: d.toISOString().slice(5, 10), fuel: 60 + (i % 3) * 8, driver: 70, maintenance: 15, other: 10 }; }),
+
 });
 
 const KEY = "mercantista-v2";
@@ -35,7 +34,7 @@ function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      const { products: _p, vendors: _v, tariffs: _t, orders: _o, requests: _r, profile: _profile, ...rest } = JSON.parse(raw);
+      const { products: _p, vendors: _v, tariffs: _t, orders: _o, requests: _r, profile: _profile, costs: _costs, ...rest } = JSON.parse(raw);
       state = { ...state, ...rest };
     }
   } catch { /* ignore */ }

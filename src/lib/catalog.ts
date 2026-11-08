@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_TARIFFS, type Tariffs } from "./pricing";
+import { productFormSchema, vendorFormSchema, categoryFormSchema, type ProductForm, type VendorForm } from "./admin";
 import { z } from "zod";
 import { priceSchema, photoSchema, optionalPhoneSchema, personSchema } from "./validation";
 import type { Availability, CategoryInfo, Product, Vendor } from "./data";
@@ -86,10 +87,17 @@ export function patchProduct(id: string, p: Partial<Product>, onError: () => voi
   set({ products: cat.products.map((x) => (x.id === id ? { ...x, ...p } : x)) });
   debounce(`p:${id}:${Object.keys(p).join(",")}`, async () => supabase.from("products").update(productRow(p) as never).eq("id", id), onError);
 }
-export async function addProduct(vendorId: string) {
-  const { error } = await supabase.from("products").insert({ name: "Nuevo producto", vendor_id: vendorId, category_id: "hortalizas", unit: "Saco de 50 kg", format: "Saco", weight_kg: 50, price: 50, availability: "por_confirmar", description: "Producto agregado por el operador." });
-  if (!error) await refreshCatalog();
-  return !error;
+export async function saveProduct(input: ProductForm, id?: string) {
+  const data = productFormSchema.parse(input);
+  const row = { name: data.name, category_id: data.category, vendor_id: data.vendorId, unit: data.unit, format: data.format, weight_kg: data.weightKg, price: data.price, quality: data.quality, availability: data.availability, description: data.desc, active: data.active };
+  const result = id ? await supabase.from("products").update(row).eq("id", id).select("id").single() : await supabase.from("products").insert(row).select("id").single();
+  if (result.error || !result.data) throw result.error ?? new Error("No se pudo guardar");
+  await refreshCatalog(); return result.data.id;
+}
+export async function patchCategory(id: string, input: { name: string; sortOrder: number }) {
+  const data = categoryFormSchema.parse(input);
+  const { error } = await supabase.from("categories").update({ name: data.name, sort_order: data.sortOrder }).eq("id", id);
+  if (error) throw error; await refreshCatalog();
 }
 export async function deleteProduct(id: string) {
   const { error } = await supabase.from("products").delete().eq("id", id);
@@ -111,10 +119,11 @@ export function patchVendor(id: string, v: Partial<Vendor>, onError: () => void)
   set({ vendors: cat.vendors.map((x) => (x.id === id ? { ...x, ...v } : x)) });
   debounce(`v:${id}:${Object.keys(v).join(",")}`, async () => supabase.from("vendors").update(vendorRow(v)).eq("id", id), onError);
 }
-export async function addVendor() {
-  const { error } = await supabase.from("vendors").insert({ id: `v-${Date.now()}`, name: "Nuevo puesto", stall: "F-01", pavilion: "F", schedule: "03:00 am - 11:00 am" });
-  if (!error) await refreshCatalog();
-  return !error;
+export async function saveVendor(input: VendorForm, id?: string) {
+  const data = vendorFormSchema.parse(input);
+  const result = id ? await supabase.from("vendors").update(data).eq("id", id).select("id").single() : await supabase.from("vendors").insert({ ...data, id: `v-${crypto.randomUUID()}` }).select("id").single();
+  if (result.error || !result.data) throw result.error ?? new Error("No se pudo guardar");
+  await refreshCatalog(); return result.data.id;
 }
 export async function deleteVendor(id: string) {
   const { error } = await supabase.from("vendors").delete().eq("id", id);

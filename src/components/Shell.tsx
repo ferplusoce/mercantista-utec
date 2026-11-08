@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Home, LayoutGrid, LogOut, MapPin, PackageSearch, Search, ShoppingBag, Store, User, ClipboardList, Leaf } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useCatalog } from "@/lib/catalog";
+import { useAdmin } from "@/lib/orders";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { WelcomeDialog } from "@/components/Welcome";
 
@@ -45,6 +47,7 @@ function SearchBox() {
 export function Header() {
   const count = useStore((s) => s.cart.reduce((n, c) => n + c.qty, 0));
   const { user, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const links = [["/catalogo", "Catálogo"], ["/puestos", "Puestos"], ["/servicios", "Servicios y tarifas"], ["/mis-pedidos", "Mis pedidos"], ["/admin", "Panel"]] as const;
   return (
     <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
@@ -64,7 +67,7 @@ export function Header() {
       </div>
       <div className="px-4 pb-3 md:hidden"><SearchBox /></div>
       <nav className="mx-auto flex max-w-7xl flex-wrap items-center gap-1 px-4 pb-2">
-        {links.map(([to, l]) => <Link key={to} to={to} className="hidden rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted md:block [&.active]:bg-accent [&.active]:text-accent-foreground">{l}</Link>)}
+        {links.filter(([to]) => to !== "/admin" || isAdmin).map(([to, l]) => <Link key={to} to={to} className="hidden rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted md:block [&.active]:bg-accent [&.active]:text-accent-foreground">{l}</Link>)}
       </nav>
       <WelcomeDialog />
     </header>
@@ -72,7 +75,8 @@ export function Header() {
 }
 
 export function MobileNav() {
-  const items = [["/", Home, "Inicio"], ["/catalogo", LayoutGrid, "Catálogo"], ["/puestos", Store, "Puestos"], ["/mis-pedidos", PackageSearch, "Mis pedidos"], ["/cuenta", User, "Cuenta"]] as const;
+  const { isAdmin } = useAdmin();
+  const items = [["/", Home, "Inicio"], ["/catalogo", LayoutGrid, "Catálogo"], ["/puestos", Store, "Puestos"], ["/mis-pedidos", PackageSearch, "Mis pedidos"], [isAdmin ? "/admin" : "/cuenta", User, isAdmin ? "Panel" : "Cuenta"]] as const;
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
       {items.map(([to, Icon, l]) => (

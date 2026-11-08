@@ -78,7 +78,7 @@ export function useAllOrders(enabled = true) {
 
 export function useOrderMutations() {
   const qc = useQueryClient();
-  const refresh = () => qc.invalidateQueries({ queryKey: ["orders"] });
+  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ["orders"] }), qc.invalidateQueries({ queryKey: ["admin", "dashboard"] })]);
   return {
     setStatus: async (o: Order, status: OrderStatus) => {
       const history = [...o.history, { status, at: new Date().toISOString() }];
@@ -103,10 +103,11 @@ export function useAdmin() {
   const role = useQuery({
     queryKey: ["admin-role", user?.id], enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("has_role", { _user_id: user!.id, _role: "admin" });
+      if (!user) return false;
+      const { data, error } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
       if (error) throw error;
       return !!data;
     },
   });
-  return { loading: loading || (!!user && role.isLoading), email: user?.email, isAdmin: !!role.data };
+  return { loading: loading || (!!user && role.isLoading), email: user?.email, isAdmin: !!user && !!role.data };
 }
