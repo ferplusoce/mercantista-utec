@@ -83,7 +83,7 @@ function AuthPage() {
         <button type="button" onClick={() => { setMode("register"); setError(""); }} className={`h-11 rounded-xl text-sm font-semibold ${mode === "register" ? "bg-card shadow-sm" : ""}`}>Registrarme</button>
       </div>
       <Card>
-        <form onSubmit={submit} className="space-y-4">
+        <form noValidate onSubmit={submit} className="space-y-4">
           <Field label="Celular" required error={errors.phone}>
             <input className={inputCls} inputMode="numeric" autoComplete="username" maxLength={9} placeholder="9XXXXXXXX" value={phone} onChange={(e) => setPhone(normalizePhone(e.target.value).slice(0, 9))} />
           </Field>

@@ -17,6 +17,7 @@ export function AdminPhotos({ o }: { o: Order }) {
   const vendors = useCatalog().vendors;
   const [busy, setBusy] = useState<number | null>(null);
   const [errors, setErrors] = useState<Record<number, string>>({});
+  const [invalidPrices, setInvalidPrices] = useState<Record<number, boolean>>({});
   const [prices, setPrices] = useState<Record<number, string>>({});
   const approved = photos.filter((p) => p.status === "aprobado").length;
   const missing = o.items.length - approved;
@@ -54,10 +55,10 @@ export function AdminPhotos({ o }: { o: Order }) {
               {errors[idx] && <p role="alert" className="text-xs text-destructive">{errors[idx]}</p>}
               {canUpload && p?.status !== "aprobado" && (
                 <div className="flex gap-2">
-                  <ValidatedInput schema={priceSchema} type="number" step="0.5" inputMode="decimal" aria-label="Precio real" placeholder="Precio real" className="h-10 w-24 rounded-lg border bg-card px-2" value={prices[idx] ?? String(p?.real_price ?? it.unitPrice)} onCommit={(v) => setPrices({ ...prices, [idx]: v })} />
+                  <ValidatedInput schema={priceSchema} onValidityChange={(valid) => setInvalidPrices({ ...invalidPrices, [idx]: !valid })} type="number" step="0.5" inputMode="decimal" aria-label="Precio real" placeholder="Precio real" className="h-10 w-24 rounded-lg border bg-card px-2" value={prices[idx] ?? String(p?.real_price ?? it.unitPrice)} onCommit={(v) => setPrices({ ...prices, [idx]: v })} />
                   <label className={`inline-flex h-10 flex-1 cursor-pointer items-center justify-center rounded-lg bg-primary px-3 font-semibold text-primary-foreground ${busy === idx ? "opacity-50" : ""}`}>
                     <Camera className="mr-1 h-4 w-4" />{busy === idx ? "Subiendo..." : p ? "Nueva foto" : "Tomar foto"}
-                    <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="hidden" disabled={busy !== null} onChange={(e) => { onFile(idx, e.target.files?.[0]); e.target.value = ""; }} />
+                    <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="hidden" disabled={busy !== null || invalidPrices[idx]} onChange={(e) => { onFile(idx, e.target.files?.[0]); e.target.value = ""; }} />
                   </label>
                 </div>
               )}
