@@ -38,7 +38,7 @@ export async function refreshCatalog() {
     supabase.from("categories").select("*").order("sort_order").abortSignal(signal),
     supabase.from("vendors").select("*").order("stall").abortSignal(signal),
     supabase.from("products").select("*").order("name").abortSignal(signal),
-    supabase.from("settings").select("*").eq("id", 1).maybeSingle().abortSignal(signal),
+    supabase.from("settings").select("*").eq("id", 1).abortSignal(signal).maybeSingle(),
   ]);
   if (c.error || v.error || p.error || s.error) { set({ loaded: true, error: true }); return; }
   const img = await resolveImages([...(c.data ?? []).map((x) => x.image_url ?? ""), ...(p.data ?? []).map((x) => x.image_url ?? "")]);
