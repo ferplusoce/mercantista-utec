@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { SearchX } from "lucide-react";
 import { FORMATS, type Category } from "@/lib/data";
 import { useCatalog } from "@/lib/catalog";
+import { isCustomerProduct } from "@/lib/catalog-photos";
 import { PriceNote, ProductCard } from "@/components/ProductCard";
 import { Switch } from "@/components/ui/switch";
 
@@ -35,7 +36,7 @@ function Catalogo() {
   const [sort, setSort] = useState("rel");
 
   const list = useMemo(() => {
-    const r = products.filter((p) => p.active && (!q || p.name.toLowerCase().includes(q.toLowerCase())) && (!cat || p.category === cat) && (!vendor || p.vendorId === vendor) && (!format || p.format === format) && p.price <= max && (!onlyStock || p.availability === "disponible"));
+    const r = products.filter((p) => isCustomerProduct(p) && (!q || p.name.toLowerCase().includes(q.toLowerCase())) && (!cat || p.category === cat) && (!vendor || p.vendorId === vendor) && (!format || p.format === format) && p.price <= max && (!onlyStock || p.availability === "disponible"));
     if (sort === "asc") r.sort((a, b) => a.price - b.price);
     if (sort === "desc") r.sort((a, b) => b.price - a.price);
     return r;

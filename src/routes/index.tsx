@@ -3,10 +3,11 @@ import { Clock, MessageCircle, ShoppingBag, ClipboardList, TrendingUp } from "lu
 import hero from "@/assets/hero.jpg";
 import { useQuery } from "@tanstack/react-query";
 import { fetchTopProductIds, pickTopProducts, useCatalog } from "@/lib/catalog";
+import { isCustomerProduct } from "@/lib/catalog-photos";
 import { addToCart } from "@/lib/store";
 import { soles, type Product } from "@/lib/data";
 import { toast } from "sonner";
-import { Photo, ProductCard } from "@/components/ProductCard";
+import { Photo, ProductCard, ProductImage } from "@/components/ProductCard";
 import { VendorCard } from "@/components/VendorCard";
 import { InstallButton } from "@/components/InstallButton";
 import { HowItWorks } from "@/components/HowItWorks";
@@ -36,7 +37,7 @@ function SectionTitle({ title, sub, link }: { title: string; sub?: string; link?
 function TopCard({ p }: { p: Product }) {
   return (
     <div className="flex flex-col rounded-2xl border bg-card p-2 shadow-sm">
-      <Photo src={p.image} name={p.name} className="h-28" />
+      <ProductImage p={p} />
       <p className="mt-2 text-sm font-semibold leading-tight">{p.name}</p>
       <p className="text-xs text-muted-foreground">{p.unit}</p>
       <p className="mt-1 font-display text-lg font-bold">{soles(p.price)}</p>
@@ -47,7 +48,7 @@ function TopCard({ p }: { p: Product }) {
 
 function Index() {
   const { products: all, vendors: allV, categories } = useCatalog();
-  const products = all.filter((p) => p.active);
+  const products = all.filter(isCustomerProduct);
   const vendors = allV.filter((v) => v.active);
   const top = useQuery({ queryKey: ["top-products"], queryFn: fetchTopProductIds, staleTime: 5 * 60_000 });
   const masPedido = pickTopProducts(products, top.data ?? []);

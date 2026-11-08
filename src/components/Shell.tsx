@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Home, LayoutGrid, LogOut, MapPin, PackageSearch, Search, ShoppingBag, Store, User, ClipboardList, Leaf } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useCatalog } from "@/lib/catalog";
+import { isCustomerProduct } from "@/lib/catalog-photos";
 import { useAdmin } from "@/lib/orders";
 import { useAuth } from "@/lib/auth";
 import { WelcomeDialog } from "@/components/Welcome";
@@ -22,7 +23,7 @@ function SearchBox() {
   const cat = useCatalog();
   const term = q.trim().toLowerCase();
   const hits = term.length < 2 ? [] : [
-    ...cat.products.filter((p) => p.name.toLowerCase().includes(term)).slice(0, 5).map((p) => ({ label: p.name, sub: "Producto", go: () => nav({ to: "/catalogo", search: { q: p.name } }) })),
+    ...cat.products.filter((p) => isCustomerProduct(p) && p.name.toLowerCase().includes(term)).slice(0, 5).map((p) => ({ label: p.name, sub: "Producto", go: () => nav({ to: "/catalogo", search: { q: p.name } }) })),
     ...cat.vendors.filter((v) => (v.name + v.stall).toLowerCase().includes(term)).slice(0, 3).map((v) => ({ label: v.name, sub: `Puesto ${v.stall}`, go: () => nav({ to: "/puestos/$id", params: { id: v.id } }) })),
   ];
   return (

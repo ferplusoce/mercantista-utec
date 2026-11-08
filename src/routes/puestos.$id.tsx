@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { BadgeCheck, Clock, MapPin, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCatalog } from "@/lib/catalog";
+import { isCustomerProduct } from "@/lib/catalog-photos";
 import { PriceNote, ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/puestos/$id")({
@@ -21,7 +22,7 @@ function Puesto() {
   const { id } = Route.useParams();
   const c = useCatalog();
   const v = c.vendors.find((x) => x.id === id);
-  const products = c.products.filter((p) => p.vendorId === id && p.active);
+  const products = c.products.filter((p) => p.vendorId === id && isCustomerProduct(p));
   if (!v) return <p className="p-10 text-center text-muted-foreground">{c.loaded ? "Puesto no encontrado." : "Cargando puesto..."}</p>;
   return (
     <div className="space-y-6">
