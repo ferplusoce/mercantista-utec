@@ -55,13 +55,13 @@ function Solicitud() {
     if (sending) return;
     if (!user) { toast.error("Debes iniciar sesión"); return; }
     setAttempted(true);
-    const items = rows;
-    if (!requestSchema.safeParse(payload).success || fileError) return;
+    const result = requestSchema.safeParse(payload);
+    if (!result.success || fileError) return;
     if (mode === "lista" && rows.length === 0) { toast.error("Agrega al menos un producto"); return; }
     if (mode === "foto" && !file) { setFileError("Adjunta tu lista"); return; }
     setSending(true);
     try {
-      const code = await submitRequest({ business: f.business, contact: f.contact, phone: f.phone, address: f.address, reference: f.reference, zone: f.zone, delivery_date: f.date, items: mode === "lista" ? items : [] }, mode === "foto" ? file?.raw : undefined, user.id);
+      const code = await submitRequest(result.data, mode === "foto" ? file?.raw : undefined, user.id);
       toast.success("Solicitud enviada"); setDone(code);
     } catch (error) { toast.error(error instanceof Error && error.name !== "ZodError" ? error.message : "Revisa los datos: celular de 9 dígitos y cantidades mayores a cero"); }
     finally { setSending(false); }
