@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
-    await navigate({ to: "/auth", replace: true });
+    await navigate({ to: "/auth", search: { redirect: undefined }, replace: true });
   }, [navigate, queryClient]);
 
   const value = useMemo(() => ({ user, loading, signOut }), [user, loading, signOut]);

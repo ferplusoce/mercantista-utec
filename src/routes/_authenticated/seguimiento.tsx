@@ -3,9 +3,9 @@ import { useState } from "react";
 import { Check, MessageCircle, PackageSearch } from "lucide-react";
 import { soles, waLink } from "@/lib/data";
 import { useCatalog } from "@/lib/catalog";
-import { STATUS_FLOW, STATUS_LABEL, useStore, type Order } from "@/lib/store";
+import { STATUS_FLOW, STATUS_LABEL, type Order } from "@/lib/store";
 import { Card } from "@/components/Field";
-import { useOrderByCode } from "@/lib/orders";
+import { useMyOrders, useOrderByCode } from "@/lib/orders";
 import { ClientPhotos } from "@/components/PhotoApproval";
 
 export const Route = createFileRoute("/_authenticated/seguimiento")({
@@ -35,7 +35,7 @@ function Seguimiento() {
   const { code } = Route.useSearch();
   const nav = useNavigate();
   const [q, setQ] = useState(code ?? "");
-  const orders = useStore((s) => s.orders);
+  const { data: orders = [] } = useMyOrders();
   const wa = useCatalog().tariffs.whatsapp;
   const { data: found, isLoading, isError } = useOrderByCode(code);
   const o = found ?? undefined;
