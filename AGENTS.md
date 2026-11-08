@@ -22,3 +22,4 @@
 - Keep installability manifest-only; browser events determine Android eligibility and iPhone Safari uses instructions, without app-shell service workers.
 - Use shared DataState skeleton/error controls for remote reads and a catalog gate for catalog-dependent screens, so failed reads never masquerade as empty data.
 - Classify authentication failures centrally by provider error code with legacy-message fallbacks; never expose raw provider messages or credentials in the UI.
+- Preserve AuthContext identity through Vite hot data during live updates, but never store session values there; refreshed consumers must share the mounted provider's context.

@@ -7,7 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 export { normalizePhone, isValidPhone, customerEmail, safeReturnPath } from "./customer-auth";
 
 type AuthValue = { user: User | null; loading: boolean; signOut: () => Promise<void> };
-const AuthContext = createContext<AuthValue | null>(null);
+// Preserve context identity during live updates: mounted providers and refreshed
+// consumers must reference the same context, without persisting session values.
+const AuthContext = import.meta.hot?.data.authContext ?? createContext<AuthValue | null>(null);
+if (import.meta.hot) import.meta.hot.data.authContext = AuthContext;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
