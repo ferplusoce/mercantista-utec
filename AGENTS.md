@@ -21,3 +21,5 @@
 - Product/category photos live in the private `product-images` bucket (public buckets are blocked by workspace policy); `image_url` stores the storage path and the app resolves signed URLs; uploads are shrunk client-side to ≤640px WebP for low-end phones.
 - Keep installability manifest-only; browser events determine Android eligibility and iPhone Safari uses instructions, without app-shell service workers.
 - Use shared DataState skeleton/error controls for remote reads and a catalog gate for catalog-dependent screens, so failed reads never masquerade as empty data.
+- Classify authentication failures centrally by provider error code with legacy-message fallbacks; never expose raw provider messages or credentials in the UI.
+- Preserve AuthContext identity through Vite hot data during live updates, but never store session values there; refreshed consumers must share the mounted provider's context.

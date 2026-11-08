@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { LockKeyhole, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { customerEmail, isValidPassword, isValidPhone, normalizePhone, safeReturnPath } from "@/lib/customer-auth";
+import { authMessage, customerEmail, normalizePhone, safeReturnPath } from "@/lib/customer-auth";
 import { useAuth } from "@/lib/auth";
 import { authSchema, fieldErrors } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
@@ -22,13 +22,6 @@ export const Route = createFileRoute("/auth")({
   ] }),
   component: AuthPage,
 });
-
-function authMessage(message: string) {
-  if (/invalid login credentials/i.test(message)) return "Celular o contraseña incorrectos";
-  if (/already registered|already been registered/i.test(message)) return "Este celular ya tiene una cuenta. Inicia sesión.";
-  if (/at least 6/i.test(message)) return "La contraseña debe tener mínimo 6 caracteres";
-  return "No pudimos continuar. Revisa tus datos e inténtalo otra vez.";
-}
 
 function AuthPage() {
   const { redirect } = Route.useSearch();
@@ -56,9 +49,10 @@ function AuthPage() {
     const credentials = { email: customerEmail(phone), password };
     try {
       if (mode === "register") {
-        const { data, error: signUpError } = await supabase.auth.signUp({ ...credentials, options: { data: { phone: normalizePhone(phone) } } });
+        const { data, error: signUpError } = await supabase.auth.signUp({ ...credentials, options: { emailRedirectTo: window.location.origin, data: { phone: normalizePhone(phone) } } });
         if (signUpError) throw signUpError;
-        if (!data.session) throw new Error("La cuenta no pudo activarse");
+        if (data.user?.identities?.length === 0) throw { code: "user_already_exists" };
+        if (!data.session) throw { code: "activation_required" };
         toast.success("Tu cuenta está lista");
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword(credentials);
@@ -67,7 +61,7 @@ function AuthPage() {
       }
       await navigate({ href: destination, replace: true });
     } catch (cause) {
-      setError(authMessage(cause instanceof Error ? cause.message : ""));
+      setError(authMessage(cause));
     } finally { setBusy(false); }
   };
 
