@@ -4,7 +4,6 @@ import { Home, LayoutGrid, LogOut, MapPin, PackageSearch, Search, ShoppingBag, S
 import { useStore } from "@/lib/store";
 import { useCatalog } from "@/lib/catalog";
 import { useAdmin } from "@/lib/orders";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { WelcomeDialog } from "@/components/Welcome";
 
