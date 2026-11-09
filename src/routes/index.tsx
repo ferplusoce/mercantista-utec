@@ -56,7 +56,7 @@ function Index() {
     <div className="space-y-14">
       <section className="relative overflow-hidden rounded-3xl bg-foreground">
         <img src={hero} alt="Entrada principal del Mercado Unicachi" width={1280} height={720} className="absolute inset-x-0 top-0 h-auto w-full object-contain object-top sm:inset-0 sm:h-full sm:object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-foreground/90 via-foreground/70 to-foreground/20" />
+        <div className="absolute inset-0 bg-gradient-to-b from-foreground/10 via-foreground/35 to-foreground sm:bg-gradient-to-r sm:from-foreground/90 sm:via-foreground/70 sm:to-foreground/20" />
         <div className="relative max-w-2xl p-6 pb-12 pt-[calc(56.25vw+0.375rem)] text-background sm:p-12 sm:py-20">
           <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Tu bodega abastecida, sin salir de ella</span>
           <h1 className="mt-4 text-3xl font-extrabold leading-tight md:text-5xl">Abastece tu bodega desde el Mercado Mayorista Unicachi sin moverte de tu negocio</h1>
