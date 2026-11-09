@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Clock, MessageCircle, ShoppingBag, ClipboardList, TrendingUp } from "lucide-react";
-import hero from "@/assets/hero.jpg";
+import hero from "@/assets/hero.webp";
 import { useQuery } from "@tanstack/react-query";
 import { fetchTopProductIds, pickTopProducts, useCatalog } from "@/lib/catalog";
 import { isCustomerProduct } from "@/lib/catalog-photos";
@@ -54,10 +54,10 @@ function Index() {
   const masPedido = pickTopProducts(products, top.data ?? []);
   return (
     <div className="space-y-14">
-      <section className="relative overflow-hidden rounded-3xl">
-        <img src={hero} alt="Puestos de frutas y verduras en un mercado mayorista al amanecer" width={1600} height={912} className="absolute inset-0 h-full w-full object-cover" />
+      <section className="relative overflow-hidden rounded-3xl bg-foreground">
+        <img src={hero} alt="Entrada principal del Mercado Unicachi" width={1280} height={720} className="absolute inset-x-0 top-0 h-auto w-full object-contain object-top sm:inset-0 sm:h-full sm:object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/90 via-foreground/70 to-foreground/20" />
-        <div className="relative max-w-2xl p-6 py-12 text-background md:p-12 md:py-20">
+        <div className="relative max-w-2xl p-6 pb-12 pt-[calc(56.25vw+0.375rem)] text-background sm:p-12 sm:py-20">
           <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Tu bodega abastecida, sin salir de ella</span>
           <h1 className="mt-4 text-3xl font-extrabold leading-tight md:text-5xl">Abastece tu bodega desde el Mercado Mayorista Unicachi sin moverte de tu negocio</h1>
           <p className="mt-4 text-background/85 md:text-lg">Tú eliges productos y caseros. Apruebas cada foto y precio antes de pagar.</p>
