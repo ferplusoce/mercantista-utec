@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Minus, Plus, Store } from "lucide-react";
+import { MessageCircle, Minus, Phone, Plus, Store } from "lucide-react";
 import { toast } from "sonner";
-import { soles, type Product } from "@/lib/data";
+import { soles, waLink, type Product } from "@/lib/data";
 import { addToCart } from "@/lib/store";
 import { useCatalog } from "@/lib/catalog";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ export function ProductCard({ p }: { p: Product }) {
   const [qty, setQty] = useState(1);
   const [open, setOpen] = useState(false);
   const { products, vendors, categories } = useCatalog();
-  const v = vendors.find((x) => x.id === p.vendorId) ?? { id: p.vendorId, name: "Puesto", stall: "-", pavilion: "-", schedule: "" };
+  const v = vendors.find((x) => x.id === p.vendorId) ?? { id: p.vendorId, name: "Puesto", stall: "-", pavilion: "-", schedule: "", phone: "" };
   const add = (n: number) => { addToCart(p.id, n); toast.success(`${n} × ${p.unit} de ${p.name} agregado al pedido`); };
   if (!isCustomerProduct(p)) return null;
   return (
@@ -72,8 +72,12 @@ export function ProductCard({ p }: { p: Product }) {
           </div>
           <Link to="/puestos/$id" params={{ id: v.id }} className="flex items-center gap-3 rounded-xl border p-3 text-sm hover:bg-muted">
             <Store className="h-5 w-5 text-primary" />
-            <div><p className="font-semibold">{v.name} · Pabellón {v.pavilion}, Puesto {v.stall}</p><p className="text-muted-foreground">Despacha {v.schedule}</p></div>
+            <div><p className="font-semibold">{v.name} · Pabellón {v.pavilion}, Puesto {v.stall}</p>{v.schedule && <p className="text-muted-foreground">Despacha {v.schedule}</p>}</div>
           </Link>
+          {v.phone && <div className="flex flex-col gap-2 sm:flex-row">
+            <a href={`tel:${v.phone}`} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border px-3 text-sm font-semibold"><Phone className="mr-2 h-4 w-4" />Llamar al casero</a>
+            <a href={waLink(`Hola, quiero consultar por ${p.name} de ${v.name} (puesto ${v.stall})`, v.phone)} target="_blank" rel="noreferrer" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-success px-3 text-sm font-semibold text-success-foreground"><MessageCircle className="mr-2 h-4 w-4" />WhatsApp del casero</a>
+          </div>}
           <p className="rounded-xl bg-secondary p-3 text-xs">El precio mayorista varía cada madrugada según la oferta de Unicachi. Te confirmamos el monto exacto antes de comprar.</p>
           <div>
             <p className="mb-2 text-sm font-semibold">Más de este puesto</p>
