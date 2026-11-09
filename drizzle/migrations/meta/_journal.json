@@ -78,6 +78,13 @@
       "when": 1794195135793,
       "tag": "0010_opinions_trial_cart_summary",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794195381435,
+      "tag": "0011_align_opinion_delivery_validation",
+      "breakpoints": true
     }
   ]
 }

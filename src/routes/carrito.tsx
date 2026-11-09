@@ -47,7 +47,7 @@ function Carrito() {
             {lines.map((l) => (
               <div key={l.productId} className="space-y-2 border-b p-4 last:border-0">
                 <div className="flex items-start gap-3">
-                  <Photo src={l.product.image} name={l.product.name} className="h-14 w-14 shrink-0 text-[10px]" />
+                  <div className="h-14 w-14 shrink-0"><Photo src={l.product.image} name={l.product.name} className="h-14 w-14 text-[10px]" /></div>
                   <div className="min-w-0 flex-1"><p className="font-semibold">{l.product.name}</p><p className="text-sm text-muted-foreground">{l.product.unit} · {soles(l.product.price)} c/u</p></div>
                   <p className="shrink-0 font-bold tabular-nums">{soles(l.qty * l.product.price)}</p>
                 </div>
