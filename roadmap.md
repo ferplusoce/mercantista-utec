@@ -1,4 +1,5 @@
 # Team feedback
+- [ ] Add real freely licensed reference photos for 12 listed products and the hojas category; store square WebP copies in product-images, preserve puesto photos, and verify every image loads with its source/license recorded.
 - [x] Add anonymous survey cart completion, timed cart summaries in opinions and CSV; verify anonymous saves, empty cart, no orders and normal checkout sign-in (14 focused tests passed; 360px checked).
 - [x] Replace sample vendors with real Unicachi stalls, reassign products, and hide missing contact/rating details (25 products verified; 7 focused tests passed).
 - [x] Replace the home cover with the uploaded Unicachi entrance photo, lightweight WebP, and verify the sign at 360px.
