@@ -1,10 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Package, ShoppingBag, Store, Trash2, Weight } from "lucide-react";
 import { soles } from "@/lib/data";
-import { cartSummary, updateCart, useStore } from "@/lib/store";
+import { cartSummary, clearCart, updateCart, useStore } from "@/lib/store";
 import { useCatalog } from "@/lib/catalog";
 import { Photo, QtyPicker, PriceNote } from "@/components/ProductCard";
 import { quantitySchema } from "@/lib/validation";
+import { finishTrialCart, isSurveyMode } from "@/lib/opinions";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/carrito")({
   head: () => ({ meta: [
@@ -19,6 +22,9 @@ export const Route = createFileRoute("/carrito")({
 });
 
 function Carrito() {
+  const navigate = useNavigate();
+  const [survey, setSurvey] = useState(false);
+  useEffect(() => { setSurvey(isSurveyMode()); }, []);
   const cart = useStore((s) => s.cart);
   const { products, vendors } = useCatalog();
   const sum = cartSummary(cart, products);
@@ -66,7 +72,11 @@ function Carrito() {
         <div className="flex justify-between border-t pt-3"><span>Subtotal productos Unicachi</span><b className="tabular-nums">{soles(sum.subtotal)}</b></div>
         <p className="text-xs text-muted-foreground">El costo del servicio de compra y entrega se define en el siguiente paso.</p>
         <PriceNote />
-        <Link to="/checkout" className="flex h-12 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground">Elegir tipo de entrega</Link>
+        {survey ? <Button className="h-auto min-h-16 w-full whitespace-normal rounded-xl px-4 py-4 text-base font-bold" onClick={() => {
+          finishTrialCart(cart, products, vendors);
+          clearCart();
+          void navigate({ to: "/opinion" });
+        }}>Terminé mi pedido de prueba → Dar mi opinión</Button> : <Button asChild className="h-12 w-full rounded-xl font-semibold"><Link to="/checkout">Elegir tipo de entrega</Link></Button>}
       </aside>
     </div>
   );

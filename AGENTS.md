@@ -13,6 +13,7 @@
 - Keep form rules in shared Zod schemas and enforce writes with database triggers; validate only changed historical fields so operational updates preserve old records.
 - Keep invalid inline admin drafts local and debounce valid edits per field so simultaneous edits do not discard each other.
 - Normalize opinion delivery types only at reporting/export boundaries, retaining raw historical answers and keeping existing KPIs unchanged.
+- Keep anonymous trial-cart timing and snapshots in session storage until opinion submission, then clear them; survey completion never invokes order creation or authentication.
 - Reuse HowItWorks in home and the first-visit welcome; only the welcome-seen flag belongs in browser storage.
 - Catalog (categories, vendors, products) and settings (tariffs, support WhatsApp) live in Cloud and are read through `src/lib/catalog.ts`; localStorage holds only cart/device data, so admin edits reach every customer.
 - Customer profiles, addresses, taxis, orders and requests live in Cloud with owner/admin access; one root AuthProvider owns session state and protected pages sit under `_authenticated`.
