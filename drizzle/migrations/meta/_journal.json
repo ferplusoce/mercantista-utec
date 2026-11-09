@@ -71,6 +71,20 @@
       "when": 1794179889544,
       "tag": "0009_unicachi_pending_products_and_photo_types",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794195135793,
+      "tag": "0010_opinions_trial_cart_summary",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794195381435,
+      "tag": "0011_align_opinion_delivery_validation",
+      "breakpoints": true
     }
   ]
 }

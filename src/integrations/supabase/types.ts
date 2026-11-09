@@ -76,6 +76,7 @@ export type Database = {
       opinions: {
         Row: {
           armo_sin_ayuda: boolean | null
+          carrito_resumen: string | null
           codigo_encuestador: string | null
           comentario: string | null
           comment: string | null
@@ -94,6 +95,7 @@ export type Database = {
         }
         Insert: {
           armo_sin_ayuda?: boolean | null
+          carrito_resumen?: string | null
           codigo_encuestador?: string | null
           comentario?: string | null
           comment?: string | null
@@ -112,6 +114,7 @@ export type Database = {
         }
         Update: {
           armo_sin_ayuda?: boolean | null
+          carrito_resumen?: string | null
           codigo_encuestador?: string | null
           comentario?: string | null
           comment?: string | null
