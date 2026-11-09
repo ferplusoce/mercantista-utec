@@ -1,4 +1,5 @@
 # Team feedback
+- [ ] Replace sample vendors with real Unicachi stalls, reassign products, and hide missing contact/rating details.
 - [x] Replace the home cover with the uploaded Unicachi entrance photo, lightweight WebP, and verify the sign at 360px.
 - [x] Prepare Unicachi drafts and enforce customer visibility for positive prices (anonymous reads: 20 products, no zero-price rows).
 - [x] Add product photo types and labels.
